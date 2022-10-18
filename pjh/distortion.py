@@ -1,47 +1,94 @@
 import cv2
+import sys # assert cv2.__version__[0] == '3', 'The fisheye module requires opencv version >= 3.0.0'
 import numpy as np
-import matplotlib.pyplot as plt
-from copy import deepcopy
+import os
+import glob
+from regex import P
 
-# 프로그램에서 얻은 camera parameters
-fx = 422.753406
-fy = 422.753483
-cx = 627.723441
-cy = 360.531994
-k1 = -0.203159
-k2 = 0.027893
-k3 = 0
-p1 = -0.001007
-p2 = 0.001643
-skew_c = 0
+# 체커보드 
+CHECKERBOARD = (6,8)
+subpix_criteria = (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
+calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC+cv2.fisheye.CALIB_CHECK_COND+cv2.fisheye.CALIB_FIX_SKEW
+objp = np.zeros((1, CHECKERBOARD[0]*CHECKERBOARD[1], 3), np.float32)
+objp[0,:,:2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
+_img_shape = None
+objpoints = [] # 3d point in real world space1
+imgpoints = [] # 2d points in image plane.
 
-file = './data/simulation_intrinsic/pattern_009.png'
+# 체커보드를 다각도에서 찍은 이미지들로부터 파라미터들을 찾는 과정
+images = glob.glob('./data/simulation_intrinsic/*.png')
+for fname in images:    
+    img = cv2.imread(fname)
+    if _img_shape == None:
+        _img_shape = img.shape[:2]
+    else:
+        assert _img_shape == img.shape[:2], "All images must share the same size."    
+        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    # 코너 찾기
+        ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD, cv2.CALIB_CB_ADAPTIVE_THRESH+cv2.CALIB_CB_FAST_CHECK+cv2.CALIB_CB_NORMALIZE_IMAGE)
+    # If found, add object points, image points (after refining them)
+        if ret == True:
+            objpoints.append(objp)
+            cv2.cornerSubPix(gray,corners,(3,3),(-1,-1),subpix_criteria)
+            imgpoints.append(corners)
+            N_OK = len(objpoints)
+       
+K = np.zeros((3, 3))
+D = np.zeros((4, 1))
+rvecs = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(N_OK)]
+tvecs = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(N_OK)]
+rms, _, _, _, _ = \
+    cv2.fisheye.calibrate(
+        objpoints,
+        imgpoints,
+        gray.shape[::-1],
+        K,
+        D,
+        rvecs,
+        tvecs,
+        calibration_flags,
+        (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
+    )
+DIM = _img_shape[::-1]
+print("Found " + str(N_OK) + " valid images for calibration")
+print("DIM=" + str(_img_shape[::-1]))
+print("K=np.array(" + str(K.tolist()) + ")")
+print("D=np.array(" + str(D.tolist()) + ")")
 
-img_d = cv2.imread(file, cv2.IMREAD_GRAYSCALE)  ##1280-720
-h, w = (img_d.shape[0], img_d.shape[1])
-# cv2.imshow('ff', img_d)
-img_u = np.zeros((h, w, 1), np.int8)  ## 검은색 이미지 생성
-flag = 0
 
-# img_u의 한 점 (xpu, ypu) normalize
-for ypu in range(h): 
-    for xpu in range(w):
-        ynu = (ypu - cy)/fy
-        xnu = (xpu - cx) / fx - (skew_c * ynu)
-        ru = xnu**2 + ynu**2
-        xnd = (1 + k1 * ru + k2 * ru**2 + k3 * ru**3) * xnu + 2 * p1 * xnu * ynu + p2 * (ru + 2 * xnu**2)
-        ynd = (1 + k1 * ru + k2 * ru**2 + k3 * ru**3) * ynu + p1 * (ru + 2 * ynu**2) + 2 * p2 * xnu * ynu
-        xpd = int(fx * (xnd + skew_c * ynd) + cx) 
-        ypd = int(fy * ynd + cy)
-        img_u[ypu][xpu] = img_d[ypd][xpd]
-        cv2.imshow('black', img_u)
-        key = cv2.waitKey(25)
-        if key == 27:  ## ESC 누르면 종료
-            flag = 1
-            break
-    if flag == 1:
-        break
 
-print(img_u)
-cv2.imshow('dd', img_u)
-cv2.waitKey(0)
+## 왜곡 보정
+
+# You should replace these 3 lines with the output in calibration step
+## 제공 받은 DIM, K, D 파라미터 
+# DIM=(1280, 720)
+# K=np.array([[416.0, 0.0, 640.0], [0.0, 416.0, 360.0], [0.0, 0.0, 1.0]])
+# D=np.array([[6.9665838155561891e-02], [-9.0530701217360399e-02], [5.1127030009307156e-02], [-1.2596854649954789e-02]])
+
+### 함수 정의
+def undistort(img_path):    
+    img = cv2.imread(img_path)
+    h,w = img.shape[:2]   
+
+    ## new_K 설정 
+    new_K = K.copy()
+    new_K[0,0]=K[0,0]/1.5
+    new_K[1,1]=K[1,1]/1.5
+
+    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), new_K, DIM, cv2.CV_16SC2)
+    undistorted_img = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)    
+    cv2.imshow("undistorted", undistorted_img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    
+print("K=np.array(" + str(K.tolist()) + ")")
+print("D=np.array(" + str(D.tolist()) + ")")
+
+## 체커보드 이미지들 확인
+images = glob.glob('./data/simulation_intrinsic/*.png')
+for fname in images:
+    undistort(fname)
+
+## 이미지 확인 
+# undistort('./data/triangle/triangle1.png')
+    
