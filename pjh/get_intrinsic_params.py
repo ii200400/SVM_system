@@ -58,7 +58,7 @@ def get_intrinsic_params(CHECKERBOARD,image_folder):
 
 # ==============================================================
 
-get_intrinsic_params((6,8), './data/simulation_intrinsic')
+get_intrinsic_params((3,6), './data/capture')
     
 
 
