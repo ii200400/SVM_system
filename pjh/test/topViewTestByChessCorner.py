@@ -1,10 +1,10 @@
 import cv2
 from cv2 import FONT_HERSHEY_COMPLEX
 import numpy as np
-chessboardx=7
-chessboardy=7
+chessboardx=8
+chessboardy=5
 CHECKERBOARD = (chessboardx,chessboardy)
-img = cv2.imread('./data/topview/chess.jpg')
+img = cv2.imread('./data/bottom_undi/bottom_undi1.png')
 gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 ret, corners = cv2.findChessboardCorners(gray, CHECKERBOARD, cv2.CALIB_CB_ADAPTIVE_THRESH+cv2.CALIB_CB_FAST_CHECK+cv2.CALIB_CB_NORMALIZE_IMAGE)
 print(ret)
