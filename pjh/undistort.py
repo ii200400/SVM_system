@@ -10,8 +10,8 @@ def undistort(img, K, D, DIM):
 
     ## new_K 설정 
     new_K = K.copy()
-    new_K[0,0]=K[0,0]/1.3
-    new_K[1,1]=K[1,1]/1.3
+    new_K[0,0]=K[0,0]/1
+    new_K[1,1]=K[1,1]/1
 
     map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), new_K, DIM, cv2.CV_16SC2)
     undistorted_img = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)    
