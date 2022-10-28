@@ -19,7 +19,8 @@ objp[0,:,:2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
 
 _img_shape = None 
 # Extracting path of individual image stored in a given directory
-images = glob.glob('./data/chesschess/*.png')
+images = glob.glob('pjh/data/intrinsic_cart/*.png')
+print(images)
 for fname in images:
     img = cv2.imread(fname)
     if _img_shape == None:
@@ -80,8 +81,8 @@ print("D=np.array(" + str(D.tolist()) + ")")
 
 
 #
-ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
-
+# ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+               
 print("Camera matrix : \n")
 print(mtx)
 print("dist : \n")

@@ -2,60 +2,13 @@ import cv2
 import numpy as np
 import glob
 from undistort import *
+from cv2 import FONT_HERSHEY_COMPLEX
 
-point_list = []
-count = 0
-img_original = None
-
-def mouse_callback(event, x, y, flags, param):
-    global point_list, count, img_original  
-
-    # 마우스 왼쪽 버튼 누를 때마다 좌표를 리스트에 저장
-    if event == cv2.EVENT_LBUTTONDOWN:
-        print("(%d, %d)" % (x, y))
-        point_list.append((x, y))
-
-        print(point_list)
-        cv2.circle(img_original, (x, y), 3, (0, 0, 255), -1)
 
 
 def topview(img_original):    
-    
-    # cv2.namedWindow('original')
-    # cv2.setMouseCallback('original', mouse_callback)
-    
-
-    # while(True):
-
-    #     cv2.imshow("original", img_original)
-
-
-    #     height, width = img_original.shape[:2]
-
-
-    #     if cv2.waitKey(1)&0xFF == 32: # spacebar를 누르면 루프에서 빠져나옵니다.
-    #         break
-
-
-    # # 좌표 순서 - 상단왼쪽 끝, 상단오른쪽 끝, 하단왼쪽 끝, 하단오른쪽 끝
-    # pts1 = np.float32([list(point_list[0]),list(point_list[1]),list(point_list[2]),list(point_list[3])])
-    # pts2 = np.float32([[0,0],[width,0],[0,height],[width,height]])
-
-    # print(pts1)
-    # print(pts2)
-
-    # M = cv2.getPerspectiveTransform(pts1,pts2)
-
-    # img_result = cv2.warpPerspective(img_original, M, (width,height))
-
-
-    # return img_result
-
-    # ========================
-    import cv2
-    from cv2 import FONT_HERSHEY_COMPLEX
-    import numpy as np
-    chessboardx=8
+        
+    chessboardx=5
     chessboardy=5
     CHECKERBOARD = (chessboardx,chessboardy)
     img = img_original
@@ -82,44 +35,51 @@ def topview(img_original):
     point1x=img.shape[1]/2
     point1y=img.shape[0]/2
     point2x=img.shape[1]/2
-    point2y=img.shape[0]/2+100
-    point3x=img.shape[1]/2+100
+    point2y=img.shape[0]/2+50
+    point3x=img.shape[1]/2+50
     point3y=img.shape[0]/2
-    point4x=img.shape[1]/2+100
-    point4y=img.shape[0]/2+100
-    print(point1x)
-    #ipm_pts = np.array([[448,609], [580,609], [580,741], [448,741]], dtype=np.float32)
-    ipm_pts = np.array([[point1x,point1y], [point2x,point2y],[point3x,point3y],[point4x,point4y]], dtype=np.float32)
+    point4x=img.shape[1]/2+50
+    point4y=img.shape[0]/2+50
+    print('ddddd')
+    # ipm_pts = np.array([[448,609], [580,609], [580,741], [448,741]], dtype=np.float32)
+    ipm_pts = np.array([[point2x,point2y], [point1x,point1y],[point4x,point4y],[point3x,point3y]], dtype=np.float32)
     ipm_matrix = cv2.getPerspectiveTransform(pts, ipm_pts)
-    ipm = cv2.warpPerspective(img, ipm_matrix, img.shape[:2][::-1])
+    ipm = cv2.warpPerspective(img, ipm_matrix, (640,480))
+    # ipm = cv2.rotate(ipm, cv2.ROTATE_180) 
 
+    print('ipm')
     print(ipm_matrix)
-    ipm90 = cv2.rotate(ipm, cv2.ROTATE_90_CLOCKWISE) 
-    ipm180 = cv2.rotate(ipm, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    
+    # ipm90 = cv2.rotate(ipm, cv2.ROTATE_90_CLOCKWISE) 
+    # ipm180 = cv2.rotate(ipm, cv2.ROTATE_90_COUNTERCLOCKWISE)
     # display (or save) images
     # cv2.imshow('img', img)
     # cv2.imshow('img', img)
    
     cv2.waitKey()
 
-    return ipm90
+    return ipm
 
 
 # =====================================================================
 
 DIM=(640, 480)
-K=np.array([[234.2312699086491, 0.0, 321.8124086172564], [0.0, 232.88975260506393, 254.41608874811922], [0.0, 0.0, 1.0]])
-D=np.array([[-0.037386507399665383], [-0.014327744674023538], [0.00624722761473243], [-0.0013115237002334407]])
+K=np.array([[236.09690171418842, 0.0, 318.85338449602176], [0.0, 234.89387612174056, 249.52451910875553], [0.0, 0.0, 1.0]])
+D=np.array([[-0.044587316407145215], [-0.006867926932128537], [0.0010003423736737584], [-6.98647544665307e-05]])
 
-images = glob.glob('./data/bottom/*.png')
-for fname in images:
-    img = cv2.imread(fname)
-    undistorted_img = undistort(img, K, D, DIM)
-    topview_img = topview(undistorted_img)
-    cv2.imshow(str(fname), undistorted_img)
-    cv2.imshow(str(fname), topview_img)
-    cv2.imshow(str(fname), img)
-    
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+fname = 'pjh/data/stitch_4/back.png'
+img = cv2.imread(fname)
+# print(str(img))
+# undistorted_img = undistort(img, K, D, DIM) 
+# cv2.imwrite('left_undi.png', undistorted_img)
+
+topview_img = topview(img)
+# cv2.imshow('left_undi', undistorted_img)
+cv2.imshow('back_top', topview_img) 
+# cv2.imwrite('left_top.png', topview_img)
+cv2.imshow('back_ori', img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
 

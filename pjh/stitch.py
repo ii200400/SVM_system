@@ -2,11 +2,12 @@ import cv2
 import sys
 import glob
 
-img_names = glob.glob('./data/stitching_images/*.jpg')
+img_names = glob.glob('pjh/data/stitch_test/*.png')
 
 # 불러온 영상을 imgs에 저장
 imgs = []
 for name in img_names:
+    print(name)
     img = cv2.imread(name)
     
     if img is None:
@@ -26,7 +27,7 @@ if status != cv2.Stitcher_OK:
     sys.exit()
     
 # 결과 영상 저장
-cv2.imwrite('output.jpg', dst)
+cv2.imshow('output.png', dst)
 
 # 출력 영상이 화면보다 커질 가능성이 있어 WINDOW_NORMAL 지정
 cv2.namedWindow('dst', cv2.WINDOW_NORMAL)
