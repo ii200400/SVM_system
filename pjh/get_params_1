@@ -45,4 +45,4 @@ print("Camera matrix : \n") # 내부 카메라 행렬
 print(mtx)
 
 print("dist : \n") # 렌즈 왜곡 계수(Lens distortion coefficients)
-print(dist) 
+print(dist)                 

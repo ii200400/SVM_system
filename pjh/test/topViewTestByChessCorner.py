@@ -45,3 +45,4 @@ ipm90 = cv2.rotate(ipm, cv2.ROTATE_90_CLOCKWISE)
 cv2.imshow('img', img)
 cv2.imshow('ipm', ipm90)
 cv2.waitKey()
+
