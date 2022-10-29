@@ -43,7 +43,7 @@ def undistort(img, side, ratio):
 
 side = 'right'
 ratio = 1.0
-images = glob.glob('pjh/data/topview/' + side + '/*.png')
+images = glob.glob('pjh/1029/intrinsic/' + side + '/*.png')
 
 
 

@@ -19,7 +19,7 @@ objp[0,:,:2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
 
 _img_shape = None 
 # Extracting path of individual image stored in a given directory
-images = glob.glob('pjh/data/intrinsic/front/*.png')
+images = glob.glob('pjh/1029/intrinsic/front/*.png')
 print(images)
 for fname in images:
     img = cv2.imread(fname)
