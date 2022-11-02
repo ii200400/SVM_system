@@ -25,6 +25,11 @@ def undistort(img, side, ratio):
         K=np.array([[236.6660345650066, 0.0, 322.7924649951577], [0.0, 235.26512582520894, 252.40633958077817], [0.0, 0.0, 1.0]])
         D=np.array([[-0.03507719652282247], [-0.019779623502449793], [0.008738624015827543], [-0.0019232019838494904]])
 
+    # 이걸로 통일. 이게 좀 괜찮은 듯.
+    # DIM=(640, 480)
+    # K=np.array([[235.1982364007136, 0.0, 320.722613672998], [0.0, 234.7955596475616, 250.22150003050075], [0.0, 0.0, 1.0]])
+    # D=np.array([[-0.05024307206669386], [0.003083654157514218], [-0.0038559072176334217], [0.0006626971518285512]])
+
     ## new_K 설정 
     new_K = K.copy()
     new_K[0,0]=K[0,0]/ratio
@@ -41,9 +46,9 @@ def undistort(img, side, ratio):
 # DIM, K, D = get_intrinsic_params((5,8), 'pjh/data/intrinsic_cart')
 
 
-side = 'right'
-ratio = 1.0
-images = glob.glob('pjh/1029/intrinsic/' + side + '/*.png')
+side = 'back'
+ratio = 1.5
+images = glob.glob('pjh/1101/topview/' + side + '_square.png')
 
 
 
@@ -56,6 +61,6 @@ for fname in images:
     cv2.imshow(side + '_undistorted_img' +'.png', undistorted_img)    
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    # cv2.imwrite(side + '_top_undi.png', undistorted_img)
+    cv2.imwrite(side + '_top_undi.png', undistorted_img)
     num += 1
 

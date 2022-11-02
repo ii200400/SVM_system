@@ -45,8 +45,8 @@ def undistort(img, side, ratio):
 # DIM, K, D = get_intrinsic_params((5,8), 'pjh/data/intrinsic_cart')
 
 
-side = 'front'
-ratio = 1.5
+side = 'left'
+ratio = 2
 images = glob.glob('pjh/1029/topview/' + side + '/*.png')
 
 
@@ -57,9 +57,9 @@ for fname in images:
     undistorted_img = undistort(img, side, ratio)
     
     cv2.imshow('img', img)   
-    cv2.imshow(side + '_undistorted_img' +'.png', undistorted_img)    
+    cv2.imshow(side + '_cap_undistorted_img' +'.png', undistorted_img)    
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    # cv2.imwrite(side + '_top_undi.png', undistorted_img)
+    cv2.imwrite(side + '_cap_undistorted.png', undistorted_img)
     num += 1
 

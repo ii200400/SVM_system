@@ -8,8 +8,8 @@ from cv2 import FONT_HERSHEY_COMPLEX
 
 def topview(img_original, side):    
         
-    chessboardx=2
-    chessboardy=2
+    chessboardx=5
+    chessboardy=5
     CHECKERBOARD = (chessboardx,chessboardy)
     img = img_original
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
@@ -37,21 +37,21 @@ def topview(img_original, side):
 
     if side == 'front':
 
-        point1y=215
-        point1x=295
-        point2y=215
-        point2x=345
-        point3y=265
-        point3x=295
-        point4y=265
-        point4x=345 
+        point1y=215+100
+        point1x=295+100
+        point2y=215+100
+        point2x=345+100
+        point3y=265+100
+        point3x=295+100
+        point4y=265+100
+        point4x=345+100
 
         # ipm_pts = np.array([[448,609], [580,609], [580,741], [448,741]], dtype=np.float32)
         ipm_pts = np.array([[point1x,point1y], [point2x,point2y], [point3x,point3y], [point4x,point4y]], dtype=np.float32)
         ipm_matrix = cv2.getPerspectiveTransform(pts, ipm_pts)
 
 
-        size = (640, 480)
+        size = (1000, 1000)
         # angle = cv2.ROTATE_90_CLOCKWISE
         ipm = cv2.warpPerspective(img, ipm_matrix, size)
         # ipm = cv2.rotate(ipm, angle) 
@@ -70,7 +70,7 @@ def topview(img_original, side):
         ipm_pts = np.array([[point4x,point4y], [point3x,point3y], [point2x,point2y], [point1x,point1y]], dtype=np.float32)
         ipm_matrix = cv2.getPerspectiveTransform(pts, ipm_pts)
 
-        size = (640, 480)
+        size = (1000, 1000)
         # angle = cv2.ROTATE_90_COUNTERCLOCKWISE
         ipm = cv2.warpPerspective(img, ipm_matrix, size)
         # ipm = cv2.rotate(ipm, angle) 
@@ -92,26 +92,26 @@ def topview(img_original, side):
         # ipm_pts = np.array([[480/2,0], [215,29], [480/2,640/2], [0,640/2]], dtype=np.float32)
         ipm_matrix = cv2.getPerspectiveTransform(pts, ipm_pts)
         
-        size = (480, 640)
+        size = (1000, 1000)
         # angle = cv2.ROTATE_180
         ipm = cv2.warpPerspective(img, ipm_matrix, size)
         # ipm = cv2.rotate(ipm, angle) 
 
     elif side == 'left' :
-        point1x=215
-        point1y=295
-        point2x=215
-        point2y=345
-        point3x=265
-        point3y=295
-        point4x=265
-        point4y=345 
+        point1x=215+100
+        point1y=295+100
+        point2x=215+100
+        point2y=345+100
+        point3x=265+100
+        point3y=295+100
+        point4x=265+100
+        point4y=345 +100
 
         # ipm_pts = np.array([[448,609], [580,609], [580,741], [448,741]], dtype=np.float32)
         ipm_pts = np.array([[point3x,point3y], [point4x,point4y], [point1x,point1y], [point2x,point2y]], dtype=np.float32)
         ipm_matrix = cv2.getPerspectiveTransform(pts, ipm_pts)
         
-        size = (480, 640)
+        size = (1000, 1000)
         # angle = cv2.ROTATE_180
         ipm = cv2.warpPerspective(img, ipm_matrix, size)
         # ipm = cv2.rotate(ipm, angle) 
@@ -127,14 +127,13 @@ def topview(img_original, side):
 
     return ipm
 
-# C:\Users\multicampus\Desktop\S07P31D108\back_top_undi.png
+
 # =====================================================================
 
 side = 'front'
 # fname = 'pjh/1031/cap_undi_done/' + side + '/' + side + '_cap_undistorted.png'
 
-# fname = 'pjh/1029/topview_undi_done_v2/' + side + '_top_undi_v2.png'
-fname = 'C:/Users/multicampus/Desktop/S07P31D108/back_top_undi.png'
+fname = 'pjh/1029/topview_undi_done_v2/' + side + '_top_undi_v2.png'
 img = cv2.imread(fname)
 
 # print(str(img))
