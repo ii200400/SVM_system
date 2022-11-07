@@ -64,6 +64,7 @@ def undistort(img, ratio):
 
     map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), new_K, DIM, cv2.CV_16SC2)
 
+    
 
 
     # print(map1, map2)
@@ -398,6 +399,6 @@ surround = bev(top_front, top_back, top_left, top_right)
 
 cv2.namedWindow('surround', flags=cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
 cv2.imshow('surround', surround)
-cv2.imwrite("asdasasdda.png", surround)
+# cv2.imwrite("asdasasdda.png", surround)
 cv2.waitKey(0) 
 # cv2.destroyAllWindows()

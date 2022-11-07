@@ -226,15 +226,13 @@ class Mask:
 
 class BlendMask:
     def __init__(self,name):
-        mf = self.get_mask('front') #11-2
-        print("2222")
+        mf = self.get_mask('front')
         mb = self.get_mask('back')
         ml = self.get_mask('left')
         mr = self.get_mask('right')
-        self.get_lines()    #12-2-1
+        self.get_lines()
         if name == 'front':
-            mf = self.get_blend_mask(mf, ml, self.lineFL, self.lineLF) 
-            print("2222")#12-2-2
+            mf = self.get_blend_mask(mf, ml, self.lineFL, self.lineLF)
             mf = self.get_blend_mask(mf, mr, self.lineFR, self.lineRF)
             self.mask = mf
         if name == 'back':
@@ -269,7 +267,7 @@ class BlendMask:
                 [BEV_WIDTH, BEV_HEIGHT - BEV_HEIGHT/5],
                 [(BEV_WIDTH+CAR_WIDTH)/2, (BEV_HEIGHT+CAR_HEIGHT)/2], 
                 [(BEV_WIDTH-CAR_WIDTH)/2, (BEV_HEIGHT+CAR_HEIGHT)/2],
-                [0, BEV_HEIGHT - BEV_HEIGHT/.5],
+                [0, BEV_HEIGHT - BEV_HEIGHT/5],
             ]).astype(np.int32)
         elif name == 'left':
             points = np.array([
@@ -334,7 +332,6 @@ class BlendMask:
                     ]).astype(np.int32)
         
     def get_blend_mask(self, maskA, maskB, lineA, lineB): #maskA 값을 합성하는 함수 
-        print("2222")
         overlap = cv2.bitwise_and(maskA, maskB) # mask 영역에서 서로 공통으로 겹치는 부분 출력
         
         indices = np.where(overlap != 0)
@@ -363,7 +360,7 @@ class BlendMask:
         return maskA
     
     def __call__(self, img):
-        return (img * self.weight).astype(np.uint8)    
+        return (img * self.weight).astype(np.uint8)   
 
 front_homography = np.array([[3.8290818190655296, 5.66226108412413, -1961.3463578215583], [0.04676494495778877, 7.593794538002965, -1398.2503661266026], [9.936840064368021e-05, 0.011048826673722773, 1.0]])
 back_homography = np.array([[-3.6014363756395578, 4.36751919471232, 2793.845376423345], [-0.16343764199990043, 3.070397421396325, 2357.357976286147], [-0.00020012270934899256, 0.008545448669492679, 1.0]])
@@ -387,6 +384,12 @@ cap3.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap4.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 cap4.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 
+
+args = BevGenerator.get_args()            
+args.CAR_WIDTH = 180
+args.CAR_HEIGHT = 340              
+bev = BevGenerator(blend=True, balance=True)
+
 while(True):
 
     ret1, frame1 = cap1.read()    # Read 결과와 frame
@@ -397,9 +400,13 @@ while(True):
 # 2. 왜곡 보정
     # 왼쪽 프레임 번호는 직접 찾아서 입력해줘야한다.
     undistorted_front = undistort(frame3, 1.5)         
-    undistorted_back = undistort(frame1, 1.5)        
+    undistorted_back = undistort(frame2, 1.5)        
     undistorted_right = undistort(frame4, 1.5)        
-    undistorted_left = undistort_left(frame2, 1.5)   
+    undistorted_left = undistort_left(frame1, 1.5) 
+
+    # val = 70
+    # array = np.full(undistorted_left.shape, (val,val,val), dtype=np.uint8)
+    # undistorted_left = cv2.add(undistorted_left, array)
 
 
 # 3. 탑뷰 전환 (호모그래피)
@@ -408,15 +415,13 @@ while(True):
     top_back = cv2.warpPerspective(undistorted_back, back_homography, (1020, 1128)) 
     top_right = cv2.warpPerspective(undistorted_right, right_homography, (1020, 1128)) 
     top_left = cv2.warpPerspective(undistorted_left, left_homography, (1020, 1128)) 
-
+    car = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/pjh/data/porche.png')
+    car = cv2.resize(car,(220,350))
+    car = padding(car, BEV_WIDTH, BEV_HEIGHT)
+    # cv2.imshow('car', car)
 
 # 4. 이미지 합성
-    args = BevGenerator.get_args()            
-    args.CAR_WIDTH = 0
-    args.CAR_HEIGHT = 0                 
-
-    bev = BevGenerator(blend=True, balance=True)    
-    surround = bev(top_front, top_back, top_left, top_right)         
+    surround = bev(top_front, top_back, top_left, top_right, car)         
 
     # cv2.namedWindow('surround', flags=cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     surround = cv2.resize(surround,(670,752))

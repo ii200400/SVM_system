@@ -7,8 +7,8 @@ parser.add_argument('-fw', '--FRAME_WIDTH', default=1280, type=int, help='Camera
 parser.add_argument('-fh', '--FRAME_HEIGHT', default=720, type=int, help='Camera Frame Height')    # 원본 이미지 높이
 parser.add_argument('-bew', '--BEV_WIDTH', default= 1020, type=int, help='BEV Frame Width')       # 탑뷰 이미지 길이
 parser.add_argument('-beh', '--BEV_HEIGHT', default= 1128, type=int, help='BEV Frame Height')     # 탑뷰 이미지 높이
-parser.add_argument('-cw', '--CAR_WIDTH', default=200, type=int, help='Car Frame Width')        # 차량 이미지 길이
-parser.add_argument('-ch', '--CAR_HEIGHT', default=400, type=int, help='Car Frame Height')      # 차량 이미지 높이
+parser.add_argument('-cw', '--CAR_WIDTH', default=250, type=int, help='Car Frame Width')        # 차량 이미지 길이
+parser.add_argument('-ch', '--CAR_HEIGHT', default=350, type=int, help='Car Frame Height')      # 차량 이미지 높이
 parser.add_argument('-fs', '--FOCAL_SCALE', default=0.65, type=float, help='Camera Undistort Focal Scale')     # 카메라 왜곡되지 않은 초점 스케일
 parser.add_argument('-ss', '--SIZE_SCALE', default=1, type=float, help='Camera Undistort Size Scale')       # 카메라 왜곡되지 않은 크기 스케일
 parser.add_argument('-blend','--BLEND_FLAG', default=False, type=bool, help='Blend BEV Image (Ture/False)')
@@ -226,13 +226,15 @@ class Mask:
 
 class BlendMask:
     def __init__(self,name):
-        mf = self.get_mask('front')
+        mf = self.get_mask('front') #11-2
+        print("2222")
         mb = self.get_mask('back')
         ml = self.get_mask('left')
         mr = self.get_mask('right')
-        self.get_lines()
+        self.get_lines()    #12-2-1
         if name == 'front':
-            mf = self.get_blend_mask(mf, ml, self.lineFL, self.lineLF)
+            mf = self.get_blend_mask(mf, ml, self.lineFL, self.lineLF) 
+            print("2222")#12-2-2
             mf = self.get_blend_mask(mf, mr, self.lineFR, self.lineRF)
             self.mask = mf
         if name == 'back':
@@ -267,7 +269,7 @@ class BlendMask:
                 [BEV_WIDTH, BEV_HEIGHT - BEV_HEIGHT/5],
                 [(BEV_WIDTH+CAR_WIDTH)/2, (BEV_HEIGHT+CAR_HEIGHT)/2], 
                 [(BEV_WIDTH-CAR_WIDTH)/2, (BEV_HEIGHT+CAR_HEIGHT)/2],
-                [0, BEV_HEIGHT - BEV_HEIGHT/5],
+                [0, BEV_HEIGHT - BEV_HEIGHT/.5],
             ]).astype(np.int32)
         elif name == 'left':
             points = np.array([
@@ -332,6 +334,7 @@ class BlendMask:
                     ]).astype(np.int32)
         
     def get_blend_mask(self, maskA, maskB, lineA, lineB): #maskA 값을 합성하는 함수 
+        print("2222")
         overlap = cv2.bitwise_and(maskA, maskB) # mask 영역에서 서로 공통으로 겹치는 부분 출력
         
         indices = np.where(overlap != 0)
@@ -360,7 +363,7 @@ class BlendMask:
         return maskA
     
     def __call__(self, img):
-        return (img * self.weight).astype(np.uint8)   
+        return (img * self.weight).astype(np.uint8)    
 
 front_homography = np.array([[3.8290818190655296, 5.66226108412413, -1961.3463578215583], [0.04676494495778877, 7.593794538002965, -1398.2503661266026], [9.936840064368021e-05, 0.011048826673722773, 1.0]])
 back_homography = np.array([[-3.6014363756395578, 4.36751919471232, 2793.845376423345], [-0.16343764199990043, 3.070397421396325, 2357.357976286147], [-0.00020012270934899256, 0.008545448669492679, 1.0]])
@@ -386,48 +389,44 @@ cap4.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 
 
 args = BevGenerator.get_args()            
-args.CAR_WIDTH = 180
-args.CAR_HEIGHT = 340              
+args.CAR_WIDTH = 220
+args.CAR_HEIGHT = 350               
 bev = BevGenerator(blend=True, balance=True)
 
-while(True):
-
-    ret1, frame1 = cap1.read()    # Read 결과와 frame
-    ret2, frame2 = cap2.read()
-    ret3, frame3 = cap3.read()
-    ret4, frame4 = cap4.read()
-
+frame1 = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/pjh/data/1104/frame1_square_4.png')  # Read 결과와 frame
+frame2 = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/pjh/data/1104/frame2_square_4.png')
+frame3 = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/pjh/data/1104/frame3_square_4.png')
+frame4 = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/pjh/data/1104/frame4_square_4.png')
+car = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/pjh/data/porche.png')
+car = cv2.resize(car,(220,350))
+car = padding(car, BEV_WIDTH, BEV_HEIGHT)
+cv2.imshow('car', car)
 # 2. 왜곡 보정
-    # 왼쪽 프레임 번호는 직접 찾아서 입력해줘야한다.
-    undistorted_front = undistort(frame3, 1.5)         
-    undistorted_back = undistort(frame2, 1.5)        
-    undistorted_right = undistort(frame4, 1.5)        
-    undistorted_left = undistort_left(frame1, 1.5) 
+# 왼쪽 프레임 번호는 직접 찾아서 입력해줘야한다.
+undistorted_front = undistort(frame3, 1.5)         
+undistorted_back = undistort(frame1, 1.5)        
+undistorted_right = undistort(frame2, 1.5)        
+undistorted_left = undistort_left(frame4, 1.5) 
 
-    # val = 70
-    # array = np.full(undistorted_left.shape, (val,val,val), dtype=np.uint8)
-    # undistorted_left = cv2.add(undistorted_left, array)
-
+val = 70
+array = np.full(undistorted_left.shape, (val,val,val), dtype=np.uint8)
+undistorted_left = cv2.add(undistorted_left, array)
 
 # 3. 탑뷰 전환 (호모그래피)
+top_front = cv2.warpPerspective(undistorted_front, front_homography, (1020, 1128)) 
+top_back = cv2.warpPerspective(undistorted_back, back_homography, (1020, 1128)) 
+top_right = cv2.warpPerspective(undistorted_right, right_homography, (1020, 1128)) 
+top_left = cv2.warpPerspective(undistorted_left, left_homography, (1020, 1128)) 
 
-    top_front = cv2.warpPerspective(undistorted_front, front_homography, (1020, 1128)) 
-    top_back = cv2.warpPerspective(undistorted_back, back_homography, (1020, 1128)) 
-    top_right = cv2.warpPerspective(undistorted_right, right_homography, (1020, 1128)) 
-    top_left = cv2.warpPerspective(undistorted_left, left_homography, (1020, 1128)) 
-    car = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/pjh/data/porche.png')
-    car = cv2.resize(car,(220,350))
-    car = padding(car, BEV_WIDTH, BEV_HEIGHT)
-    # cv2.imshow('car', car)
 
 # 4. 이미지 합성
-    surround = bev(top_front, top_back, top_left, top_right, car)         
+surround = bev(top_front, top_back, top_left, top_right, car)         
 
-    # cv2.namedWindow('surround', flags=cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-    surround = cv2.resize(surround,(670,752))
-    cv2.imshow('surround', surround)
+# cv2.namedWindow('surround', flags=cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+surround = cv2.resize(surround,(670,752))
+cv2.imshow('surround', surround)
 
-    if cv2.waitKey(1) == ord('c'):
-        cv2.destroyAllWindows()
+cv2.waitKey(0)
 
-    # cv2.imwrite("asdasasdda.png", surround)
+
+# cv2.imwrite("asdasasdda.png", surround)

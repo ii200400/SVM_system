@@ -67,34 +67,34 @@ while(True):
 
     if(ret1) :
         # cam1 = undi_top(frame1, 'right')         
-        # cv2.imshow('frame_1_right', frame1) 
+        cv2.imshow('frame', frame1) 
         undistorted_img1 = undistort(frame1, 1.5)
-        cv2.imshow('frame_1', undistorted_img1)     
+        # cv2.imshow('frame_1', undistorted_img1)     
 
         pass
 
     if(ret2) :
         # cam2 = undi_top(frame2, 'front')   
         # cv2.imshow('frame_2_front', cam2)
-        # cv2.imshow('frame_2', frame2) 
+        cv2.imshow('frame_2', frame2) 
         undistorted_img2 = undistort(frame2, 1.5)
-        cv2.imshow('frame_2', undistorted_img2) 
+        # cv2.imshow('frame_2', undistorted_img2) 
         pass
 
     if(ret3) :
         # cam3 = undi_top(frame3, 'back')     
         # cv2.imshow('frame_3_back', cam3)
-        # cv2.imshow('frame_3', frame3) 
+        cv2.imshow('frame_3', frame3) 
         undistorted_img3 = undistort(frame3, 1.5)
-        cv2.imshow('frame_3', undistorted_img3) 
+        # cv2.imshow('frame_3', undistorted_img3) 
         pass
 
     if(ret4) :
         # cam4 = undi_top(frame4, 'left')       
         # cv2.imshow('frame_4_left', cam4)
-        # cv2.imshow('frame_4', frame4) 
+        cv2.imshow('frame_4', frame4) 
         undistorted_img4 = undistort_left(frame4, 1.5)
-        cv2.imshow('frame_4', undistorted_img4) 
+        # cv2.imshow('frame_4', undistorted_img4) 
         
 
     if cv2.waitKey(1) == ord('a'):
@@ -107,7 +107,7 @@ while(True):
 
     if cv2.waitKey(1) == ord('b'):
         # cv2.imwrite(str(num)+'left_square.png', frame1)
-        cv2.imwrite('frame4_square_' + str(num) + '.png', undistorted_img4)
+        cv2.imwrite('frame4_square_' + str(num) + '.png', frame2)
         # cv2.imwrite(str(num)+'back_square.png', frame3)
         # cv2.imwrite(str(num)+'right_square.png', frame4)
         num += 1
@@ -116,7 +116,7 @@ while(True):
     if cv2.waitKey(1) == ord('c'):
         # cv2.imwrite(str(num)+'left_square.png', frame1)
         # cv2.imwrite(str(num)+'front_square.png', frame2)
-        cv2.imwrite('frame3_square_' + str(num) + '.png', undistorted_img3)
+        cv2.imwrite('frame3_square_' + str(num) + '.png', frame3)
         # cv2.imwrite(str(num)+'right_square.png', frame4)
         
         num += 1
@@ -126,17 +126,17 @@ while(True):
         # cv2.imwrite(str(num)+'left_square.png', frame1)
         # cv2.imwrite(str(num)+'front_square.png', frame2)
         # cv2.imwrite(str(num)+'back_square.png', frame3)
-        cv2.imwrite('frame4_square_' + str(num) + '.png', undistorted_img4)
+        cv2.imwrite('frame4_square_' + str(num) + '.png', frame4)
         
         num += 1
         print('frame4_square_' + str(num) + '.png')
 
         
     if cv2.waitKey(1) == ord('z'):
-        cv2.imwrite('frame1_square_' + str(num) + '.png', undistorted_img1)
-        cv2.imwrite('frame2_square_' + str(num) + '.png', undistorted_img2)
-        cv2.imwrite('frame3_square_' + str(num) + '.png', undistorted_img3)
-        cv2.imwrite('frame4_square_' + str(num) + '.png', undistorted_img4)
+        cv2.imwrite('frame1_square_' + str(num) + '.png', frame1)
+        cv2.imwrite('frame2_square_' + str(num) + '.png', frame2)
+        cv2.imwrite('frame3_square_' + str(num) + '.png', frame3)
+        cv2.imwrite('frame4_square_' + str(num) + '.png', framezzzzzzzzzzzzzzzzzzzzzzzzzzzz4)
 
 
         num += 1
