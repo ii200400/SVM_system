@@ -39,7 +39,7 @@ def undistort(img, ratio):
 
 
 cap1 = cv2.VideoCapture(1)
-cap2 = cv2.VideoCapture(2)
+cap2 = cv2.VideoCapture(0)
 cap3 = cv2.VideoCapture(3)
 cap4 = cv2.VideoCapture(4)
 
