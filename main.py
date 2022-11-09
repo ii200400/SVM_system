@@ -370,7 +370,7 @@ left_homography = np.array([[0.1022385737675907, 5.770995782571725, -1228.052596
 
 
 # 1. 4 방향 이미지 read
-cap1 = cv2.VideoCapture(1)
+cap1 = cv2.VideoCapture(0)
 cap2 = cv2.VideoCapture(2)
 cap3 = cv2.VideoCapture(3)
 cap4 = cv2.VideoCapture(4)
@@ -390,9 +390,17 @@ args.CAR_WIDTH = 155
 args.CAR_HEIGHT = 315             
 bev = BevGenerator(blend=True, balance=True)
 
-
 mode = 'front'
 
+screen = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/screen.jpg')
+screen = cv2.resize(screen,(int(1536),int(860)))
+font = cv2.FONT_HERSHEY_DUPLEX 
+car = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/2d/data/porche2.png')
+car = cv2.resize(car,(320,450))
+car = padding(car, BEV_WIDTH, BEV_HEIGHT)
+cv2.namedWindow('screen', cv2.WND_PROP_FULLSCREEN)
+cv2.setWindowProperty('screen', cv2.WND_PROP_FULLSCREEN,
+                          cv2.WINDOW_FULLSCREEN)
 while(True):
 
     ret1, frame1 = cap1.read()    # Read 결과와 frame
@@ -402,10 +410,10 @@ while(True):
 
 # 2. 왜곡 보정
     # 왼쪽 프레임 번호는 직접 찾아서 입력해줘야한다.
-    undistorted_front = undistort(frame3, 1.5)         
-    undistorted_back = undistort(frame4, 1.5)        
+    undistorted_front = undistort(frame4, 1.5)         
+    undistorted_back = undistort(frame1, 1.5)        
     undistorted_right = undistort(frame2, 1.5)        
-    undistorted_left = undistort_left(frame1, 1.5) 
+    undistorted_left = undistort_left(frame3, 1.5) 
 
     # val = 70
     # array = np.full(undistorted_left.shape, (val,val,val), dtype=np.uint8)
@@ -417,18 +425,13 @@ while(True):
     top_back = cv2.warpPerspective(undistorted_back, back_homography, (1020, 1128)) 
     top_right = cv2.warpPerspective(undistorted_right, right_homography, (1020, 1128)) 
     top_left = cv2.warpPerspective(undistorted_left, left_homography, (1020, 1128)) 
-    car = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/2d/data/porche2.png')
-    car = cv2.resize(car,(320,450))
-    car = padding(car, BEV_WIDTH, BEV_HEIGHT)
+    
     # cv2.imshow('car', car)
 
 # 4. 이미지 합성
     surround = bev(top_front, top_back, top_left, top_right, car)         
-
-    # cv2.namedWindow('surround', flags=cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+    
     surround = cv2.resize(surround,(445,500)) 
-
-
 
     # 5. 화면 설정
     if mode == 'front':
@@ -446,27 +449,24 @@ while(True):
     view = cv2.resize(view,(870,500)) 
     in_screen = cv2.hconcat([view, surround]) 
 
-    screen = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/screen.jpg')
-    screen = cv2.resize(screen,(int(1536),int(860)))
     screen[190:190+in_screen.shape[0], 50:50+in_screen.shape[1]] = in_screen
     
-    font = cv2.FONT_HERSHEY_DUPLEX  
+     
     cv2.putText(screen, mode.upper(), (60, 225), font, 1,(0,255,255), 2, cv2.LINE_AA)
-
-
     cv2.imshow('screen', screen)
 
-    if cv2.waitKey(1) == ord('1'):
+    key = cv2.waitKey(1)
+
+    if key == ord('q'):
         mode = 'front'
-    if cv2.waitKey(1) == ord('2'):
+    elif key == ord('w'):
         mode = 'back'
-    if cv2.waitKey(1) == ord('3'):
+    elif key == ord('e'):
         mode = 'left'
-    if cv2.waitKey(1) == ord('4'):
+    elif key == ord('r'):
         mode = 'right'
 
-
-    if cv2.waitKey(1) == ord('c'):
+    elif key == ord('c'):
         cv2.destroyAllWindows()
 
     
