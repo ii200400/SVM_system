@@ -61,10 +61,11 @@ void computeMatricesFromInputs() {
 	verticalAngle += mouseSpeed * float(stageHeight / 2 - ypos);
 
 	// 마우스
-	if (verticalAngle < -0.5) {
-		verticalAngle = -0.5;
-	} else if (verticalAngle > 0.5) {
-		verticalAngle = 0.5;
+	// 참고로 radius 1.5가 90도 정도 
+	if (verticalAngle < -0.2) {
+		verticalAngle = -0.2;
+	} else if (verticalAngle > 0.4) {
+		verticalAngle = 0.4;
 	}
 
 	float FoV = initialFoV;// - 5 * glfwGetMouseWheel(); // Now GLFW 3 requires setting up a callback for this. It's a bit too complicated for this beginner's tutorial, so it's disabled instead.
@@ -82,20 +83,20 @@ void computeMatricesFromInputs() {
 
 	*/
 
-	float radius = 1.05f;
+	float radius = 1.1f;
 	float camX = sin(horizontalAngle) * radius;
 	float camZ = cos(horizontalAngle) * radius;
 	float camY = sin(verticalAngle) * radius;
 
 	//camY 조정 하는 코드 필요
-	if (camY >= 0.3) {
-		camY = 0.3;
+	/*if (camY >= 2.0) {
+		camY = 2.0;
 	}
-	else if (camY <= -0.3) {
-		camY = -0.3;
-	}
+	else if (camY <= 0) {
+		camY = 0;
+	}*/
 
-	ViewMatrix = glm::lookAt(glm::vec3(camX, 0.6, camZ), glm::vec3(0.0, camY, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	ViewMatrix = glm::lookAt(glm::vec3(camX, 0.8, camZ), glm::vec3(0.0, camY, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
 	
 //	ViewMatrix = glm::lookAt(glm::vec3(0, 5, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));

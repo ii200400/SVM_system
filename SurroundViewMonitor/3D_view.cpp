@@ -4,7 +4,6 @@
 #include <vector>
 #include<cmath>
 
-
 // Include GLEWc
 #include <GL/glew.h>
 
@@ -30,6 +29,11 @@ using namespace glm;
 using namespace cv;
 using namespace std;
 
+// wand
+//#include <MagickWand/MagickWand.h>
+#include <Magick++.h>
+using namespace Magick;
+
 /*
 VideoCapture cap1(0);
 VideoCapture cap2(1);
@@ -48,6 +52,8 @@ float cols = 765;
 
 cv::Mat mapX(rows, cols, CV_32F);
 cv::Mat mapY(rows, cols, CV_32F);
+
+Mat getBowlImg();
 
 void mapInit(cv::Mat mapX, cv::Mat mapY) {
 	for (int x = 0; x < rows; x++) {
@@ -236,7 +242,15 @@ int main(void)
 		cap2 >> img_frame2;
 		*/
 
-		Mat top = imread("./resource/sample.png");
+		// 카메라에서 이미지 가져오는 함수 혹은 코드
+		// VideoCapture cap1(1), cap1(2);
+
+		// 왜곡을 없앤 이미지를 가져오는 함수
+		// &frong, &right, &back, &left
+		// getImg(&frong){};
+		//Mat top = imread("./resource/test.png");
+		//Mat top = getBowlImg(&frong, &right, &back, &left);
+		Mat top = getBowlImg();
 
 		imshow("top", top);
 
@@ -323,3 +337,154 @@ int main(void)
 	return 0;
 }
 
+// getBowlImg(&frong, &right, &back, &left)
+Mat getBowlImg() {
+	String absolute_path = "C:/Users/multicampus/Desktop/ssafy/self_project/gitlab/SurroundViewMonitor/";
+	String files[4] = { "front.png", "right.png", "back.png", "left.png"};
+
+	Mat bowlImg = Mat::zeros(3, 3, CV_32F);
+	Image img = Image(absolute_path + files[0]);
+	double degree = 0;
+	Mat result;
+	bool init = false;
+
+	// 파이썬의 "arc" 그냥 ArcDistortion 이라고 적어도 인식한다.
+	MagickCore::DistortMethod method = MagickCore::DistortMethod::ArcDistortion;
+	for (int i = 0; i < 4; i++) {
+		//imread(absolute_path + files[i]);
+		// (image=None, blob=None, file=None, filename=None, pseudo=None, background=None, colorspace=None, depth=None, extract=None, format=None, height=None, interlace=None, resolution=None, sampling_factors=None, units=None, width=None)
+		//int img = Magick::Image(NULL, absolute_path + files[i]);
+		img = Image(absolute_path + files[i]);
+		Magick::Geometry g = img.size();
+		const size_t h = g.height(), w = g.width();
+		int size[] = { w * 2, h * 2 };
+		
+		printf("width : %d, height: %d\n", w, h);
+
+		if (i == 0){
+			degree = 315;
+		}else if (i == 1) {
+			degree = 45;
+		}else if (i == 2) {
+			degree = 135;
+		}else{
+			degree = 225;
+		}
+
+		if (!init) {
+			bowlImg = Mat::zeros(3, size, CV_32F);
+			init = true;
+		}
+
+		img.distort(method, 75, &degree);
+		printf("width : %d, height: %d\n", w, h);
+
+		int sub = 310;
+		int x = w - sub;
+		int y = h - sub;
+		int x2 = w;
+		int y2 = h;
+
+		if (i == 0) {
+			//for (int i = 0; i < x; i++) {
+			//	for (int j = 0; j < y; j++) {
+			//		//result.at<CV_32F>.at<CV_32F> = img.
+			//		img.colormatrix
+			//	}
+			//}
+		}
+		else if (i == 1) {
+			
+		}
+		else if (i == 2) {
+			degree = 135;
+		}
+		else {
+			degree = 225;
+		}
+		/*
+        if i==0:
+            result[0:x,0:y]=np.asarray(img)[0:x,0:y]
+        if i==1:
+            result[0:x,y:y*2]=np.asarray(img)[0:x,sub:y2]
+        if i==2:
+            result[x:x*2,y:y*2]=np.asarray(img)[sub:x2,sub:y2]
+        if i==3:
+            result[x:x*2,0:y]=np.asarray(img)[sub:x2,0:y]
+		*/
+	}
+
+	//imwrite(absolute_path + "result5.png", result[0:result.shape[0] - sub * 2, 0 : result.shape[1] - sub * 2]);
+
+	return bowlImg;
+}
+
+
+//#include <Magick++.h>
+//#include <iostream>
+//#include <iomanip>
+//#include <list>
+//
+//// Include GLFW
+//#include <GLFW/glfw3.h>
+//GLFWwindow* window;
+//
+//using namespace std;
+//using namespace Magick;
+//
+//int main(int argc, char **argv)
+//{
+//	if (argc < 2)
+//	{
+//		cout << "Usage: " << argv[0] << " file..." << endl;
+//		exit(1);
+//	}
+//
+//	// Initialize ImageMagick install location for Windows
+//	InitializeMagick(*argv);
+//
+//	{
+//		std::list<std::string> attributes;
+//
+//		attributes.push_back("TopLeftColor");
+//		attributes.push_back("TopRightColor");
+//		attributes.push_back("BottomLeftColor");
+//		attributes.push_back("BottomRightColor");
+//		attributes.push_back("filter:brightness:mean");
+//		attributes.push_back("filter:brightness:standard-deviation");
+//		attributes.push_back("filter:brightness:kurtosis");
+//		attributes.push_back("filter:brightness:skewness");
+//		attributes.push_back("filter:saturation:mean");
+//		attributes.push_back("filter:saturation:standard-deviation");
+//		attributes.push_back("filter:saturation:kurtosis");
+//		attributes.push_back("filter:saturation:skewness");
+//
+//		char **arg = &argv[1];
+//		while (*arg)
+//		{
+//			string fname(*arg);
+//			try {
+//				cout << "File: " << fname << endl;
+//				Image image(fname);
+//
+//				/* Analyze module does not require an argument list */
+//				image.process("analyze", 0, 0);
+//
+//				list<std::string>::iterator pos = attributes.begin();
+//				while (pos != attributes.end())
+//				{
+//					cout << "  " << setw(16) << setfill(' ') << setiosflags(ios::left)
+//						<< *pos << " = " << image.attribute(*pos) << endl;
+//					pos++;
+//				}
+//			}
+//			catch (Exception &error_)
+//			{
+//				cout << error_.what() << endl;
+//			}
+//			++arg;
+//		}
+//	}
+//
+//	return 0;
+//}
