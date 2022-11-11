@@ -115,7 +115,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)/lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_world3415d.lib;glew32s.lib;glfw3.lib;opengl32.lib;glut32.lib;freeglut.lib;CORE_RL_Magick++_.lib;CORE_RL_MagickCore_.lib;CORE_RL_MagickWand_.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_world3415d.lib;glew32s.lib;glfw3.lib;opengl32.lib;glut32.lib;freeglut.lib;CORE_DB_Magick++_.lib;CORE_DB_MagickCore_.lib;CORE_DB_MagickWand_.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

@@ -96,6 +96,7 @@ Mat wave(Mat image) {
 
 int main(void)
 {
+	InitializeMagick("C:/Users/multicampus/Desktop/lastProject/project3/SurroundViewMonitor");
 
 	if (!glfwInit())
 	{
@@ -339,11 +340,11 @@ int main(void)
 
 // getBowlImg(&frong, &right, &back, &left)
 Mat getBowlImg() {
-	String absolute_path = "C:/Users/multicampus/Desktop/ssafy/self_project/gitlab/SurroundViewMonitor/";
+	String absolute_path = "";
 	String files[4] = { "front.png", "right.png", "back.png", "left.png"};
 
 	Mat bowlImg = Mat::zeros(3, 3, CV_32F);
-	Image img = Image(absolute_path + files[0]);
+	Image img = Image("back.png");
 	double degree = 0;
 	Mat result;
 	bool init = false;
@@ -357,7 +358,9 @@ Mat getBowlImg() {
 		img = Image(absolute_path + files[i]);
 		Magick::Geometry g = img.size();
 		const size_t h = g.height(), w = g.width();
-		int size[] = { w * 2, h * 2 };
+		
+		// 에러나서 추가..
+		int size[] = { w * 2, h * 2, 3 };
 		
 		printf("width : %d, height: %d\n", w, h);
 
