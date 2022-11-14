@@ -359,9 +359,6 @@ Mat getBowlImg() {
 		// (image=None, blob=None, file=None, filename=None, pseudo=None, background=None, colorspace=None, depth=None, extract=None, format=None, height=None, interlace=None, resolution=None, sampling_factors=None, units=None, width=None)
 		//int img = Magick::Image(NULL, absolute_path + files[i]);
 		img = Image(absolute_path + files[i]);
-
-		// 이미지 크기
-		const size_t  w = img.columns(), h = img.rows();
 		
 		//printf("width : %d, height: %d\n", w, h);
 
@@ -375,16 +372,18 @@ Mat getBowlImg() {
 			degree = 225;
 		}
 
+		// 아래의 파라미터에 따라서 왜곡 진행
+		double listOfArguments[2] = { 75, degree };
+		img.distort(method, 2, listOfArguments);
+
+		// 이미지 크기
+		const size_t  w = img.columns(), h = img.rows();
 		if (!init) {
 			// https://3001ssw.tistory.com/172
 			// zero함수를 사용하면 Scalar(0)으로 고정되어 3차원 배열이 불가능하다.
 			bowlImg = Mat(w * 2, h * 2, CV_8UC3, Scalar(0, 0, 0));
 			init = true;
 		}
-
-		// 아래의 파라미터에 따라서 왜곡 진행
-		double listOfArguments[2] = { 75, degree };
-		img.distort(method, 2, listOfArguments);
 
 		int sub = 310;
 		int x = w - sub;

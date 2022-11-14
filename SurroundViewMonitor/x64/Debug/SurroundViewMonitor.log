@@ -7,23 +7,23 @@ c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_vi
 c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(68): warning C4244: '인수': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
 c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(284): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
 c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(316): warning C4267: '인수': 'size_t'에서 'GLsizei'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(381): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(384): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(389): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
 c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(390): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
 c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(391): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
 c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(392): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(393): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(423): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(435): warning C4244: '인수': 'MagickCore::Quantum'에서 '_Tp'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-          with
-          [
-              _Tp=uchar
-          ]
+c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(422): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
 c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(434): warning C4244: '인수': 'MagickCore::Quantum'에서 '_Tp'(으)로 변환하면서 데이터가 손실될 수 있습니다.
           with
           [
               _Tp=uchar
           ]
 c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(433): warning C4244: '인수': 'MagickCore::Quantum'에서 '_Tp'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+          with
+          [
+              _Tp=uchar
+          ]
+c:\users\multicampus\desktop\ssafy\self_project\gitlab\surroundviewmonitor\3d_view.cpp(432): warning C4244: '인수': 'MagickCore::Quantum'에서 '_Tp'(으)로 변환하면서 데이터가 손실될 수 있습니다.
           with
           [
               _Tp=uchar
