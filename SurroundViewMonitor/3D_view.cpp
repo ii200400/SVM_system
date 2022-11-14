@@ -1,8 +1,9 @@
 // Include standard headers
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
-#include<cmath>
+#include <cmath>
 
 // Include GLEWc
 #include <GL/glew.h>
@@ -96,7 +97,7 @@ Mat wave(Mat image) {
 
 int main(void)
 {
-	InitializeMagick("C:/Users/multicampus/Desktop/lastProject/project3/SurroundViewMonitor");
+	InitializeMagick("C:/Users/multicampus/Desktop/ssafy/self_project/gitlab/SurroundViewMonitor");
 
 	if (!glfwInit())
 	{
@@ -340,29 +341,29 @@ int main(void)
 
 // getBowlImg(&frong, &right, &back, &left)
 Mat getBowlImg() {
+	// 이미지 경로
 	String absolute_path = "";
 	String files[4] = { "front.png", "right.png", "back.png", "left.png"};
 
-	Mat bowlImg = Mat::zeros(3, 3, CV_32F);
-	Image img = Image("back.png");
-	double degree = 0;
-	Mat result;
-	bool init = false;
+	Mat bowlImg;	// bowlView에 넣을 이미지
+	Image img = Image("back.png");	// 카메라에서 받아온 이미지
+	double degree;	// 이미지를 회전시킬 정도 
+	bool init = false;	// bowlImg 크기 초기화 여부
 
-	// 파이썬의 "arc" 그냥 ArcDistortion 이라고 적어도 인식한다.
-	MagickCore::DistortMethod method = MagickCore::DistortMethod::ArcDistortion;
+	// 파이썬의 "arc" 그냥 왜곡을 하는 방법 중 하나
+	MagickCore::DistortMethod method = ArcDistortion;
+	
 	for (int i = 0; i < 4; i++) {
+		// 이미지 불러오기
 		//imread(absolute_path + files[i]);
 		// (image=None, blob=None, file=None, filename=None, pseudo=None, background=None, colorspace=None, depth=None, extract=None, format=None, height=None, interlace=None, resolution=None, sampling_factors=None, units=None, width=None)
 		//int img = Magick::Image(NULL, absolute_path + files[i]);
 		img = Image(absolute_path + files[i]);
-		Magick::Geometry g = img.size();
-		const size_t h = g.height(), w = g.width();
+
+		// 이미지 크기
+		const size_t  w = img.columns(), h = img.rows();
 		
-		// 에러나서 추가..
-		int size[] = { w * 2, h * 2, 3 };
-		
-		printf("width : %d, height: %d\n", w, h);
+		//printf("width : %d, height: %d\n", w, h);
 
 		if (i == 0){
 			degree = 315;
@@ -375,12 +376,15 @@ Mat getBowlImg() {
 		}
 
 		if (!init) {
-			bowlImg = Mat::zeros(3, size, CV_32F);
+			// https://3001ssw.tistory.com/172
+			// zero함수를 사용하면 Scalar(0)으로 고정되어 3차원 배열이 불가능하다.
+			bowlImg = Mat(w * 2, h * 2, CV_8UC3, Scalar(0, 0, 0));
 			init = true;
 		}
 
-		img.distort(method, 75, &degree);
-		printf("width : %d, height: %d\n", w, h);
+		// 아래의 파라미터에 따라서 왜곡 진행
+		double listOfArguments[2] = { 75, degree };
+		img.distort(method, 2, listOfArguments);
 
 		int sub = 310;
 		int x = w - sub;
@@ -388,23 +392,59 @@ Mat getBowlImg() {
 		int x2 = w;
 		int y2 = h;
 
+		// https://www.imagemagick.org/Magick++/Image++.html#Raw%20Image%20Pixel%20Access
+		// Low-Level Image Pixel Access 참고
+		// https://stackoverflow.com/questions/47781396/imagemagick-c-version-7-modify-pixel-value-in-blank-image
+		//img.modifyImage(); // 필요 없는 듯..?
+
+		// Image 클래스의 각 픽셀 정보를 가져오기 위한 변수
+		Quantum *pixel_cache = img.getPixels(0, 0, w, h);
+
+		// bowlView 변수에 왜곡을 넣은 이미지 붙여넣기 (수동으로..)
+		int bowl_h, bowl_w, img_h, img_w;
 		if (i == 0) {
-			//for (int i = 0; i < x; i++) {
-			//	for (int j = 0; j < y; j++) {
-			//		//result.at<CV_32F>.at<CV_32F> = img.
-			//		img.colormatrix
-			//	}
-			//}
+			bowl_h = 0, bowl_w = 0;
+			img_h = 0, img_w = 0;
 		}
 		else if (i == 1) {
-			
+			bowl_h = 0, bowl_w = y;
+			img_h = 0, img_w = sub;
 		}
 		else if (i == 2) {
-			degree = 135;
+			bowl_h = x, bowl_w = y;
+			img_h = sub, img_w = sub;
 		}
 		else {
-			degree = 225;
+			bowl_h = x, bowl_w = 0;
+			img_h = sub, img_w = 0;
 		}
+
+		// RGB이니 당연히 3이다.
+		int channels = img.channels();
+		for (int i = 0; i < y; i++) {
+			for (int j = 0; j < x; j++) {
+				std::size_t offset = (w * (i + img_h) + (j + img_w));
+				std::size_t moffset = channels * offset;
+				// 나누는 이유
+				// https://stackoverflow.com/questions/47781396/imagemagick-c-version-7-modify-pixel-value-in-blank-image
+				// 놀랍게도 RGB가 아니라 BGR인 것 같..다. 아래 글을 보니 맞다.
+				// https://stackoverflow.com/questions/7899108/opencv-get-pixel-channel-value-from-mat-image
+				Vec3b color = Vec3b(
+					pixel_cache[moffset + 2] / 257,
+					pixel_cache[moffset + 1] / 257,
+					pixel_cache[moffset + 0] / 257);
+
+				/*if (pixel_cache[moffset + 0] > 0) {
+					cout << pixel_cache[moffset + 0] << " "<< pixel_cache[moffset + 0] / 257 << endl;
+					cout << pixel_cache[moffset + 1] << " " << pixel_cache[moffset + 1] / 257 << endl;
+					cout << pixel_cache[moffset + 2] << " " << pixel_cache[moffset + 2] / 257 << endl;
+				}*/
+				bowlImg.at<Vec3b>((i + bowl_h), (j + bowl_w)) = color;
+				//Vec3b colortemp = bowlImg.at<Vec3b>(x, y);
+			}
+		}
+
+		
 		/*
         if i==0:
             result[0:x,0:y]=np.asarray(img)[0:x,0:y]
@@ -417,77 +457,8 @@ Mat getBowlImg() {
 		*/
 	}
 
+	imshow("top", bowlImg);
 	//imwrite(absolute_path + "result5.png", result[0:result.shape[0] - sub * 2, 0 : result.shape[1] - sub * 2]);
 
 	return bowlImg;
 }
-
-
-//#include <Magick++.h>
-//#include <iostream>
-//#include <iomanip>
-//#include <list>
-//
-//// Include GLFW
-//#include <GLFW/glfw3.h>
-//GLFWwindow* window;
-//
-//using namespace std;
-//using namespace Magick;
-//
-//int main(int argc, char **argv)
-//{
-//	if (argc < 2)
-//	{
-//		cout << "Usage: " << argv[0] << " file..." << endl;
-//		exit(1);
-//	}
-//
-//	// Initialize ImageMagick install location for Windows
-//	InitializeMagick(*argv);
-//
-//	{
-//		std::list<std::string> attributes;
-//
-//		attributes.push_back("TopLeftColor");
-//		attributes.push_back("TopRightColor");
-//		attributes.push_back("BottomLeftColor");
-//		attributes.push_back("BottomRightColor");
-//		attributes.push_back("filter:brightness:mean");
-//		attributes.push_back("filter:brightness:standard-deviation");
-//		attributes.push_back("filter:brightness:kurtosis");
-//		attributes.push_back("filter:brightness:skewness");
-//		attributes.push_back("filter:saturation:mean");
-//		attributes.push_back("filter:saturation:standard-deviation");
-//		attributes.push_back("filter:saturation:kurtosis");
-//		attributes.push_back("filter:saturation:skewness");
-//
-//		char **arg = &argv[1];
-//		while (*arg)
-//		{
-//			string fname(*arg);
-//			try {
-//				cout << "File: " << fname << endl;
-//				Image image(fname);
-//
-//				/* Analyze module does not require an argument list */
-//				image.process("analyze", 0, 0);
-//
-//				list<std::string>::iterator pos = attributes.begin();
-//				while (pos != attributes.end())
-//				{
-//					cout << "  " << setw(16) << setfill(' ') << setiosflags(ios::left)
-//						<< *pos << " = " << image.attribute(*pos) << endl;
-//					pos++;
-//				}
-//			}
-//			catch (Exception &error_)
-//			{
-//				cout << error_.what() << endl;
-//			}
-//			++arg;
-//		}
-//	}
-//
-//	return 0;
-//}
