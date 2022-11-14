@@ -187,8 +187,6 @@ int main(void)
 	bool res2 = loadOBJ("./resource/cart.obj", cart_vertices, cart_uvs, cart_normals);
 
 	// Load it into a VBO
-
-	// Load it into a VBO
 	GLuint vertexbuffer[2];
 
 	// 새로운 버퍼 생성 glGenBuffers(버퍼 개수, 이름 저장 공간)
@@ -211,6 +209,8 @@ int main(void)
 
 	mapInit(mapX, mapY);
 
+	bool img_init = false;
+	Mat top;
 
 	do {
 
@@ -252,15 +252,12 @@ int main(void)
 		// getImg(&frong){};
 		//Mat top = imread("./resource/test.png");
 		//Mat top = getBowlImg(&frong, &right, &back, &left);
-		Mat top = getBowlImg();
 
-		imshow("top", top);
+		if (!img_init) {
+			top = getBowlImg();
+			img_init = true;
+		}
 
-		//Mat result = wave(top);
-		//imshow("circle", result);
-
-
-		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, result.cols, result.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, result.ptr());
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, top.cols, top.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, top.ptr());
 
 
@@ -343,10 +340,10 @@ int main(void)
 Mat getBowlImg() {
 	// 이미지 경로
 	String absolute_path = "";
-	String files[4] = { "front.png", "right.png", "back.png", "left.png"};
+	String files[4] = { "front.png", "right.png", "left.png", "back.png"};
 
 	Mat bowlImg;	// bowlView에 넣을 이미지
-	Image img = Image("back.png");	// 카메라에서 받아온 이미지
+	Image img;	// 카메라에서 받아온 이미지
 	double degree;	// 이미지를 회전시킬 정도 
 	bool init = false;	// bowlImg 크기 초기화 여부
 
@@ -355,109 +352,110 @@ Mat getBowlImg() {
 	
 	for (int i = 0; i < 4; i++) {
 		// 이미지 불러오기
-		//imread(absolute_path + files[i]);
-		// (image=None, blob=None, file=None, filename=None, pseudo=None, background=None, colorspace=None, depth=None, extract=None, format=None, height=None, interlace=None, resolution=None, sampling_factors=None, units=None, width=None)
-		//int img = Magick::Image(NULL, absolute_path + files[i]);
 		img = Image(absolute_path + files[i]);
-		
-		//printf("width : %d, height: %d\n", w, h);
 
 		if (i == 0){
 			degree = 315;
 		}else if (i == 1) {
-			degree = 45;
+			degree = 45 + 4;
 		}else if (i == 2) {
-			degree = 135;
+			degree = 225 - 4;
 		}else{
-			degree = 225;
+			degree = 135;
 		}
 
 		// 아래의 파라미터에 따라서 왜곡 진행
-		double listOfArguments[2] = { 75, degree };
+		double listOfArguments[2] = { 90, degree };
 		img.distort(method, 2, listOfArguments);
 
 		// 이미지 크기
 		const size_t  w = img.columns(), h = img.rows();
+
 		if (!init) {
-			// https://3001ssw.tistory.com/172
 			// zero함수를 사용하면 Scalar(0)으로 고정되어 3차원 배열이 불가능하다.
-			bowlImg = Mat(w * 2, h * 2, CV_8UC3, Scalar(0, 0, 0));
+			bowlImg = Mat(w * 1.5, h * 1.5, CV_8UC3, Scalar(0, 0, 0));
 			init = true;
 		}
-
-		int sub = 310;
-		int x = w - sub;
-		int y = h - sub;
-		int x2 = w;
-		int y2 = h;
-
-		// https://www.imagemagick.org/Magick++/Image++.html#Raw%20Image%20Pixel%20Access
-		// Low-Level Image Pixel Access 참고
-		// https://stackoverflow.com/questions/47781396/imagemagick-c-version-7-modify-pixel-value-in-blank-image
-		//img.modifyImage(); // 필요 없는 듯..?
 
 		// Image 클래스의 각 픽셀 정보를 가져오기 위한 변수
 		Quantum *pixel_cache = img.getPixels(0, 0, w, h);
 
-		// bowlView 변수에 왜곡을 넣은 이미지 붙여넣기 (수동으로..)
-		int bowl_h, bowl_w, img_h, img_w;
+		// bowlView 변수에 왜곡을 넣은 이미지 붙여넣기
+
+		int x_fin = h;
+		int y_fin = w;
+		int x0 = x_fin - 350;
+		int y0 = y_fin - 350;
+
 		if (i == 0) {
-			bowl_h = 0, bowl_w = 0;
-			img_h = 0, img_w = 0;
+			Mat temp = Mat(h, w, CV_8UC3, Scalar(255, 255, 255));
+			img.write(0, 0, w, h, "BGR", Magick::CharPixel, temp.data);
+
+			Mat imageROI = bowlImg(Rect(0, 0, y0, x0));
+			temp = temp(Rect(0, 0, y0, x0));
+
+			addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
 		}
 		else if (i == 1) {
-			bowl_h = 0, bowl_w = y;
-			img_h = 0, img_w = sub;
+			int x1 = 10;
+			int y1 = (int)(y_fin / 4) - 25;
+
+			int x1_move = 0;
+			int y1_move = 25;
+
+			int x1_size = x_fin - x1;
+			int y1_size = y_fin - y1;
+
+			Mat temp = Mat(h, w, CV_8UC3, Scalar(255, 255, 255));
+			img.write(0, 0, w, h, "BGR", Magick::CharPixel, temp.data);
+
+			Mat imageROI = bowlImg(Rect(y0 + y1_move, x1_move, y1_size, x1_size));
+			temp = temp(Rect(y1, x1, y1_size, x1_size));
+
+			addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
+			imshow("test", bowlImg);
 		}
 		else if (i == 2) {
-			bowl_h = x, bowl_w = y;
-			img_h = sub, img_w = sub;
+			int x2 = (int)(x_fin / 4 - 40);
+			int y2 = (int)(0);
+
+			int x2_move = 0;
+			int y2_move = 30;
+
+			y_fin = int(y_fin * 3 / 4);
+
+			int x2_size = x_fin - x2;
+			int y2_size = y_fin - y2;
+
+			Mat temp = Mat(h, w, CV_8UC3, Scalar(255, 255, 255));
+			img.write(0, 0, w, h, "BGR", Magick::CharPixel, temp.data);		
+
+			Mat imageROI = bowlImg(Rect(y2_move, x0 + x2_move, y2_size, x2_size));
+			temp = temp(Rect(y2, x2, y2_size, x2_size)).clone();
+
+			addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
 		}
 		else {
-			bowl_h = x, bowl_w = 0;
-			img_h = sub, img_w = 0;
+			int x3 = (int)(x_fin / 4);
+			int y3 = (int)(y_fin / 4 - 30);
+
+			int x3_move = 0;
+			int y3_move = 0;
+
+			int x3_size = x_fin - x3;
+			int y3_size = y_fin - y3;
+
+			Mat temp = Mat(h, w, CV_8UC3, Scalar(255, 255, 255));
+			img.write(0, 0, w, h, "BGR", Magick::CharPixel, temp.data);
+
+			Mat imageROI = bowlImg(Rect(y0 + y3_move, x0 + x3_move, y3_size, x3_size));
+			temp = temp(Rect(y3, x3, y3_size, x3_size)).clone();
+
+			addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
 		}
 
-		// RGB이니 당연히 3이다.
-		int channels = img.channels();
-		for (int i = 0; i < y; i++) {
-			for (int j = 0; j < x; j++) {
-				std::size_t offset = (w * (i + img_h) + (j + img_w));
-				std::size_t moffset = channels * offset;
-				// 나누는 이유
-				// https://stackoverflow.com/questions/47781396/imagemagick-c-version-7-modify-pixel-value-in-blank-image
-				// 놀랍게도 RGB가 아니라 BGR인 것 같..다. 아래 글을 보니 맞다.
-				// https://stackoverflow.com/questions/7899108/opencv-get-pixel-channel-value-from-mat-image
-				Vec3b color = Vec3b(
-					pixel_cache[moffset + 2] / 257,
-					pixel_cache[moffset + 1] / 257,
-					pixel_cache[moffset + 0] / 257);
-
-				/*if (pixel_cache[moffset + 0] > 0) {
-					cout << pixel_cache[moffset + 0] << " "<< pixel_cache[moffset + 0] / 257 << endl;
-					cout << pixel_cache[moffset + 1] << " " << pixel_cache[moffset + 1] / 257 << endl;
-					cout << pixel_cache[moffset + 2] << " " << pixel_cache[moffset + 2] / 257 << endl;
-				}*/
-				bowlImg.at<Vec3b>((i + bowl_h), (j + bowl_w)) = color;
-				//Vec3b colortemp = bowlImg.at<Vec3b>(x, y);
-			}
-		}
-
-		
-		/*
-        if i==0:
-            result[0:x,0:y]=np.asarray(img)[0:x,0:y]
-        if i==1:
-            result[0:x,y:y*2]=np.asarray(img)[0:x,sub:y2]
-        if i==2:
-            result[x:x*2,y:y*2]=np.asarray(img)[sub:x2,sub:y2]
-        if i==3:
-            result[x:x*2,0:y]=np.asarray(img)[sub:x2,0:y]
-		*/
 	}
 
 	imshow("top", bowlImg);
-	//imwrite(absolute_path + "result5.png", result[0:result.shape[0] - sub * 2, 0 : result.shape[1] - sub * 2]);
-
 	return bowlImg;
 }
