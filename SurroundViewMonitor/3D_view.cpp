@@ -25,15 +25,21 @@ using namespace glm;
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
-
 #include <opencv2/opencv.hpp>
+
+#include <opencv2/calib3d.hpp>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <typeinfo>  
+
 using namespace cv;
 using namespace std;
 
 // wand
 //#include <MagickWand/MagickWand.h>
 #include <Magick++.h>
-using namespace Magick;
+
+//using namespace Magick;
 
 /*
 VideoCapture cap1(0);
@@ -43,6 +49,7 @@ Mat img_frame2;
 */
 
 Mat cart_image;
+Mat bowlImg;
 
 float k1 = 0.2;
 float k2 = 0.8;
@@ -51,10 +58,266 @@ float k3 = 20;
 float rows = 765;
 float cols = 765;
 
+bool bowlInit = false;
+
 cv::Mat mapX(rows, cols, CV_32F);
 cv::Mat mapY(rows, cols, CV_32F);
 
-Mat getBowlImg();
+// 변수 선언(global)
+int FRAME_WIDTH = 1280;
+int FRAME_HEIGHT = 720;
+int BEV_WIDTH = 1020;
+int BEV_HEIGHT = 1128;
+int CAR_WIDTH = 155;
+int CAR_HEIGHT = 315;
+float FOCAL_SCALE = 0.65;
+float SIZE_SCALE = 1;
+
+
+// 함수 선언 (내부 코드 선언은 main 함수 아래로)
+Mat padding(Mat img, int width, int height);
+Mat color_balance(Mat image);
+Mat* luminance_balance(Mat* images);
+
+void getBowlImg(Mat &cameraImg, int mode);
+
+class BlendMask {
+public:
+	Mat lineFL = cv::Mat(2, 2, cv::DataType<int>::type);
+	Mat lineFR = cv::Mat(2, 2, cv::DataType<int>::type);
+	Mat lineBL = cv::Mat(2, 2, cv::DataType<int>::type);
+	Mat lineBR = cv::Mat(2, 2, cv::DataType<int>::type);
+	Mat lineLF = cv::Mat(2, 2, cv::DataType<int>::type);
+	Mat lineLB = cv::Mat(2, 2, cv::DataType<int>::type);
+	Mat lineRF = cv::Mat(2, 2, cv::DataType<int>::type);
+	Mat lineRB = cv::Mat(2, 2, cv::DataType<int>::type);
+
+	Mat mf, mb, ml, mr, mask, weight, weight2;
+
+	BlendMask() {
+	}
+
+	BlendMask(string name) {
+		mf = get_mask("front");
+		mb = get_mask("back");
+		ml = get_mask("left");
+		mr = get_mask("right");
+		get_lines();
+
+		if (name == "front") {
+			mf = get_blend_mask(mf, ml, lineFL, lineLF);
+			mf = get_blend_mask(mf, mr, lineFR, lineRF);
+			mask = mf;
+		}
+		else if (name == "back") {
+			mb = get_blend_mask(mb, ml, lineBL, lineLB);
+			mb = get_blend_mask(mb, mr, lineBR, lineRB);
+			mask = mb;
+		}
+		else if (name == "left") {
+			ml = get_blend_mask(ml, mf, lineLF, lineFL);
+			ml = get_blend_mask(ml, mb, lineLB, lineBL);
+			mask = ml;
+		}
+		else if (name == "right") {
+			mr = get_blend_mask(mr, mf, lineRF, lineFR);
+			mr = get_blend_mask(mr, mb, lineRB, lineBR);
+			mask = mr;
+		}
+
+		int size1[] = { mask.rows ,mask.cols };
+		weight = Mat::zeros(2, size1, CV_32FC3);
+
+		for (int i = 0; i < mask.rows; i++) {
+			for (int j = 0; j < mask.cols; j++) {
+
+				Vec3f& p1 = weight.at<Vec3f>(i, j);
+				p1 = mask.at<Vec3f>(i, j) / 255.0;
+			}
+		}
+
+	}
+
+
+	Mat get_mask(string name) {
+		Mat mask = Mat::zeros(BEV_HEIGHT, BEV_WIDTH, CV_32FC3);
+		Point rook_points[1][6];
+		if (name == "front") {
+			rook_points[0][0] = Point(0, 0);
+			rook_points[0][1] = Point(BEV_WIDTH, 0);
+			rook_points[0][2] = Point(BEV_WIDTH, BEV_HEIGHT / 5);
+			rook_points[0][3] = Point((BEV_WIDTH + CAR_WIDTH) / 2, (BEV_HEIGHT - CAR_HEIGHT) / 2);
+			rook_points[0][4] = Point((BEV_WIDTH - CAR_WIDTH) / 2, (BEV_HEIGHT - CAR_HEIGHT) / 2);
+			rook_points[0][5] = Point(0, BEV_HEIGHT / 5);
+		}
+		else if (name == "back") {
+			rook_points[0][0] = Point(0, BEV_HEIGHT);
+			rook_points[0][1] = Point(BEV_WIDTH, BEV_HEIGHT);
+			rook_points[0][2] = Point(BEV_WIDTH, BEV_HEIGHT - BEV_HEIGHT / 5);
+			rook_points[0][3] = Point((BEV_WIDTH + CAR_WIDTH) / 2, (BEV_HEIGHT + CAR_HEIGHT) / 2);
+			rook_points[0][4] = Point((BEV_WIDTH - CAR_WIDTH) / 2, (BEV_HEIGHT + CAR_HEIGHT) / 2);
+			rook_points[0][5] = Point(0, BEV_HEIGHT - BEV_HEIGHT / 5);
+		}
+		else if (name == "left") {
+			rook_points[0][0] = Point(0, 0);
+			rook_points[0][1] = Point(0, BEV_HEIGHT);
+			rook_points[0][2] = Point(BEV_WIDTH / 5, BEV_HEIGHT);
+			rook_points[0][3] = Point((BEV_WIDTH - CAR_WIDTH) / 2, (BEV_HEIGHT + CAR_HEIGHT) / 2);
+			rook_points[0][4] = Point((BEV_WIDTH - CAR_WIDTH) / 2, (BEV_HEIGHT - CAR_HEIGHT) / 2);
+			rook_points[0][5] = Point(BEV_WIDTH / 5, 0);
+		}
+		else if (name == "right") {
+			rook_points[0][0] = Point(BEV_WIDTH, 0);
+			rook_points[0][1] = Point(BEV_WIDTH, BEV_HEIGHT);
+			rook_points[0][2] = Point(BEV_WIDTH - BEV_WIDTH / 5, BEV_HEIGHT);
+			rook_points[0][3] = Point((BEV_WIDTH + CAR_WIDTH) / 2, (BEV_HEIGHT + CAR_HEIGHT) / 2);
+			rook_points[0][4] = Point((BEV_WIDTH + CAR_WIDTH) / 2, (BEV_HEIGHT - CAR_HEIGHT) / 2);
+			rook_points[0][5] = Point(BEV_WIDTH - BEV_WIDTH / 5, 0);
+		}
+
+
+		const Point* ppt[1] = { rook_points[0] };
+
+		int npt[] = { 6 };
+		fillPoly(mask, ppt, npt, 1, Scalar(255, 255, 255));
+
+		return mask;
+	}
+
+	void get_lines() {
+
+		lineFL.at<int>(0, 0) = 0;
+		lineFL.at<int>(0, 1) = BEV_HEIGHT / 5;
+		lineFL.at<int>(1, 0) = (BEV_WIDTH - CAR_WIDTH) / 2;
+		lineFL.at<int>(1, 1) = (BEV_HEIGHT - CAR_HEIGHT) / 2;
+
+		lineFR.at<int>(0, 0) = BEV_WIDTH;
+		lineFR.at<int>(0, 1) = BEV_HEIGHT / 5;
+		lineFR.at<int>(1, 0) = (BEV_WIDTH + CAR_WIDTH) / 2;
+		lineFR.at<int>(1, 1) = (BEV_HEIGHT - CAR_HEIGHT) / 2;
+
+		lineBL.at<int>(0, 0) = 0;
+		lineBL.at<int>(0, 1) = BEV_HEIGHT - BEV_HEIGHT / 5;
+		lineBL.at<int>(1, 0) = (BEV_WIDTH - CAR_WIDTH) / 2;
+		lineBL.at<int>(1, 1) = (BEV_HEIGHT + CAR_HEIGHT) / 2;
+
+		lineBR.at<int>(0, 0) = BEV_WIDTH;
+		lineBR.at<int>(0, 1) = BEV_HEIGHT - BEV_HEIGHT / 5;
+		lineBR.at<int>(1, 0) = (BEV_WIDTH + CAR_WIDTH) / 2;
+		lineBR.at<int>(1, 1) = (BEV_HEIGHT + CAR_HEIGHT) / 2;
+
+		lineLF.at<int>(0, 0) = BEV_WIDTH / 5;
+		lineLF.at<int>(0, 1) = 0;
+		lineLF.at<int>(1, 0) = (BEV_WIDTH - CAR_WIDTH) / 2;
+		lineLF.at<int>(1, 1) = (BEV_HEIGHT - CAR_HEIGHT) / 2;
+
+		lineLB.at<int>(0, 0) = BEV_WIDTH / 5;
+		lineLB.at<int>(0, 1) = BEV_HEIGHT;
+		lineLB.at<int>(1, 0) = (BEV_WIDTH - CAR_WIDTH) / 2;
+		lineLB.at<int>(1, 1) = (BEV_HEIGHT + CAR_HEIGHT) / 2;
+
+		lineRF.at<int>(0, 0) = BEV_WIDTH - BEV_WIDTH / 5;
+		lineRF.at<int>(0, 1) = 0;
+		lineRF.at<int>(1, 0) = (BEV_WIDTH + CAR_WIDTH) / 2;
+		lineRF.at<int>(1, 1) = (BEV_HEIGHT - CAR_HEIGHT) / 2;
+		lineRB.at<int>(0, 0) = BEV_WIDTH - BEV_WIDTH / 5;
+		lineRB.at<int>(0, 1) = BEV_HEIGHT;
+		lineRB.at<int>(1, 0) = (BEV_WIDTH + CAR_WIDTH) / 2;
+		lineRB.at<int>(1, 1) = (BEV_HEIGHT + CAR_HEIGHT) / 2;
+	}
+
+	Mat get_blend_mask(Mat maskA, Mat maskB, Mat lineA, Mat lineB) {
+		Mat overlap;
+		cv::bitwise_and(maskA, maskB, overlap);
+		waitKey(1);
+		Point *indices = new Point[overlap.rows*overlap.cols];
+
+		int idx = 0;
+		Vec3f tmp;
+
+		for (int x = 0; x < overlap.rows; x++) {
+			for (int y = 0; y < overlap.cols; y++) {
+				tmp = overlap.at<Vec3f>(Point(y, x));
+
+				if (tmp != Vec3f()) {
+					indices[idx++] = Point(y, x);
+
+				}
+			}
+		}
+		for (int i = 0; i < idx; i++) {
+			float distA = cv::pointPolygonTest(lineA, Point(Point(indices[i]).x, Point(indices[i]).y), true);
+			float distB = cv::pointPolygonTest(lineB, Point(Point(indices[i]).x, Point(indices[i]).y), true);
+
+			maskA.at<Vec3f>(Point(indices[i])) = Vec3f(pow(distA, 2) / (pow(distA, 2) + pow(distB, 2) + 1e-6) * 255, pow(distA, 2) / (pow(distA, 2) + pow(distB, 2) + 1e-6) * 255, pow(distA, 2) / (pow(distA, 2) + pow(distB, 2) + 1e-6) * 255);
+
+		}
+
+
+		delete[] indices;
+
+		return maskA;
+	}
+
+	Mat returning(Mat img) {
+		img.convertTo(img, CV_32FC3);
+		Mat a;
+		cv::multiply(img, weight, a);
+
+		return a;
+	}
+};
+
+class BevGenerator {
+public:
+	BlendMask masks[4];
+	Mat surround;
+
+	BevGenerator() {
+		masks[0] = BlendMask("front");
+		masks[1] = BlendMask("back");
+		masks[2] = BlendMask("left");
+		masks[3] = BlendMask("right");
+
+
+	}
+
+	Mat returning(Mat front, Mat back, Mat left, Mat right, Mat car) {
+		Mat *images = new Mat[4];
+		images[0] = front;
+		images[1] = back;
+		images[2] = left;
+		images[3] = right;
+
+		images = luminance_balance(images);
+
+		for (int i = 0; i < 4; i++) {
+			images[i] = masks[i].returning(images[i]);
+
+		}
+		//imshow("mask" + to_string(0), images[0]);
+		//imshow("mask" + to_string(1) , images[1]);
+		//imshow("mask" + to_string(2) , images[2]);
+		//imshow("mask" + to_string(3) , images[3]);
+		//imwrite("mask" + to_string(0)+".jpg", images[0]);
+		//imwrite("mask" + to_string(1) + ".jpg", images[1]);
+		//imwrite("mask" + to_string(2) + ".jpg", images[2]);
+		//imwrite("mask" + to_string(3) + ".jpg", images[3]);
+		//waitKey(1);
+
+		cv::add(images[0], images[1], surround);
+		cv::add(surround, images[2], surround);
+		cv::add(surround, images[3], surround);
+
+
+		surround = color_balance(surround);
+		car.convertTo(car, CV_32FC3);
+		cv::add(surround, car, surround);
+
+		return surround;
+	}
+
+};
 
 void mapInit(cv::Mat mapX, cv::Mat mapY) {
 	for (int x = 0; x < rows; x++) {
@@ -97,7 +360,8 @@ Mat wave(Mat image) {
 
 int main(void)
 {
-	InitializeMagick("C:/Users/multicampus/Desktop/ssafy/self_project/gitlab/SurroundViewMonitor");
+	// C:/Users/multicampus/Desktop/ssafy/self_project/gitlab/SurroundViewMonitor
+	Magick::InitializeMagick("");
 
 	if (!glfwInit())
 	{
@@ -152,6 +416,144 @@ int main(void)
 	glEnable(GL_CULL_FACE);
 	// 안쪽면만 그림
 	glCullFace(GL_FRONT);
+
+	// 호모그래피 배열 초기화
+	cv::Mat front_homography = cv::Mat(3, 3, cv::DataType<double>::type);
+	front_homography.at<double>(0, 0) = 3.8290818190655296;
+	front_homography.at<double>(0, 1) = 5.66226108412413;
+	front_homography.at<double>(0, 2) = -1961.3463578215583;
+	front_homography.at<double>(1, 0) = 0.04676494495778877;
+	front_homography.at<double>(1, 1) = 7.593794538002965;
+	front_homography.at<double>(1, 2) = -1398.2503661266026;
+	front_homography.at<double>(2, 0) = 9.936840064368021e-05;
+	front_homography.at<double>(2, 1) = 0.011048826673722773;
+	front_homography.at<double>(2, 2) = 1.0;
+
+	cv::Mat back_homography = cv::Mat(3, 3, cv::DataType<double>::type);
+	back_homography.at<double>(0, 0) = -3.6014363756395578;
+	back_homography.at<double>(0, 1) = 4.36751919471232;
+	back_homography.at<double>(0, 2) = 2793.845376423345;
+	back_homography.at<double>(1, 0) = -0.16343764199990043;
+	back_homography.at<double>(1, 1) = 3.070397421396325;
+	back_homography.at<double>(1, 2) = 2357.357976286147;
+	back_homography.at<double>(2, 0) = -0.00020012270934899256;
+	back_homography.at<double>(2, 1) = 0.008545448669492679;
+	back_homography.at<double>(2, 2) = 1.0;
+
+	cv::Mat right_homography = cv::Mat(3, 3, cv::DataType<double>::type);
+	right_homography.at<double>(0, 0) = -0.08221005850690113;
+	right_homography.at<double>(0, 1) = 1.6235034060147169;
+	right_homography.at<double>(0, 2) = 2032.459375714023;
+	right_homography.at<double>(1, 0) = 2.945881257892563;
+	right_homography.at<double>(1, 1) = 3.582400762214573;
+	right_homography.at<double>(1, 2) = -1439.2015581787357;
+	right_homography.at<double>(2, 0) = -0.00011329233289173604;
+	right_homography.at<double>(2, 1) = 0.0068701395422870026;
+	right_homography.at<double>(2, 2) = 0.9999999999999999;
+
+	cv::Mat left_homography = cv::Mat(3, 3, cv::DataType<double>::type);
+	left_homography.at<double>(0, 0) = 0.1022385737675907;
+	left_homography.at<double>(0, 1) = 5.770995782571725;
+	left_homography.at<double>(0, 2) = -1228.0525962849354;
+	left_homography.at<double>(1, 0) = -3.1690352115113147;
+	left_homography.at<double>(1, 1) = 3.516499167979982;
+	left_homography.at<double>(1, 2) = 2659.2521230613215;
+	left_homography.at<double>(2, 0) = 0.0002888891947907289;
+	left_homography.at<double>(2, 1) = 0.006800266459274919;
+	left_homography.at<double>(2, 2) = 1.0;
+
+	// left fish-eye 왜곡 RectifyMap
+	cv::Mat LEFT_K = cv::Mat(3, 3, cv::DataType<double>::type);
+	cv::Mat LEFT_D = cv::Mat(4, 1, cv::DataType<double>::type);
+	cv::Mat E = cv::Mat::eye(3, 3, cv::DataType<double>::type);
+	cv::Mat new_LEFT_K = cv::Mat(3, 3, cv::DataType<double>::type);
+	cv::Size size = { 1280, 720 };
+	cv::Mat left_map1, left_map2;
+
+	LEFT_K.at<double>(0, 0) = 486.43710381577273;
+	LEFT_K.at<double>(0, 1) = 0.0;
+	LEFT_K.at<double>(0, 2) = 643.0021325671074;
+	LEFT_K.at<double>(1, 0) = 0.0;
+	LEFT_K.at<double>(1, 1) = 485.584911786959;
+	LEFT_K.at<double>(1, 2) = 402.9808925210084;
+	LEFT_K.at<double>(2, 0) = 0.0;
+	LEFT_K.at<double>(2, 1) = 0.0;
+	LEFT_K.at<double>(2, 2) = 1.0;
+
+	LEFT_D.at<double>(0, 0) = -0.06338733272909226;
+	LEFT_D.at<double>(1, 0) = -0.007861033496168955;
+	LEFT_D.at<double>(2, 0) = 0.005073683389947028;
+	LEFT_D.at<double>(3, 0) = -0.0010639404289377306;
+
+	new_LEFT_K.at<double>(0, 0) = 486.43710381577273 / 1.5;
+	new_LEFT_K.at<double>(0, 1) = 0.0;
+	new_LEFT_K.at<double>(0, 2) = 643.0021325671074;
+	new_LEFT_K.at<double>(1, 0) = 0.0;
+	new_LEFT_K.at<double>(1, 1) = 485.584911786959 / 1.5;
+	new_LEFT_K.at<double>(1, 2) = 402.9808925210084;
+	new_LEFT_K.at<double>(2, 0) = 0.0;
+	new_LEFT_K.at<double>(2, 1) = 0.0;
+	new_LEFT_K.at<double>(2, 2) = 1.0;
+
+	cv::fisheye::initUndistortRectifyMap(LEFT_K, LEFT_D, E, new_LEFT_K, size, CV_16SC2, left_map1, left_map2);
+
+
+	// other fish-eye 왜곡 RectifyMap
+	cv::Mat K = cv::Mat(3, 3, cv::DataType<double>::type);
+	cv::Mat D = cv::Mat(4, 1, cv::DataType<double>::type);
+	cv::Mat new_K = cv::Mat(3, 3, cv::DataType<double>::type);
+	cv::Mat map1, map2;
+
+	K.at<double>(0, 0) = 455.8515274977241;
+	K.at<double>(0, 1) = 0.0;
+	K.at<double>(0, 2) = 655.7621645964248;
+	K.at<double>(1, 0) = 0.0;
+	K.at<double>(1, 1) = 455.08604281075947;
+	K.at<double>(1, 2) = 367.3548823943176;
+	K.at<double>(2, 0) = 0.0;
+	K.at<double>(2, 1) = 0.0;
+	K.at<double>(2, 2) = 1.0;
+
+	D.at<double>(0, 0) = -0.02077978156022359;
+	D.at<double>(1, 0) = -0.02434621475644252;
+	D.at<double>(2, 0) = 0.009725498728069807;
+	D.at<double>(3, 0) = -0.0018108318059442028;
+
+	new_K.at<double>(0, 0) = 455.8515274977241 / 1.5;
+	new_K.at<double>(0, 1) = 0.0;
+	new_K.at<double>(0, 2) = 655.7621645964248;
+	new_K.at<double>(1, 0) = 0.0;
+	new_K.at<double>(1, 1) = 455.08604281075947 / 1.5;
+	new_K.at<double>(1, 2) = 367.3548823943176;
+	new_K.at<double>(2, 0) = 0.0;
+	new_K.at<double>(2, 1) = 0.0;
+	new_K.at<double>(2, 2) = 1.0;
+
+	cv::fisheye::initUndistortRectifyMap(K, D, E, new_K, size, CV_16SC2, map1, map2);
+
+	// 차량 생성
+	Mat resizing_car;
+	cv::Mat car = cv::imread("porche.png");
+	cv::resize(car, resizing_car, cv::Size(320, 450));
+	car = padding(resizing_car, BEV_WIDTH, BEV_HEIGHT);
+
+
+	// 0. 영상 획득 1
+	//cv::VideoCapture cap_0(0, CAP_DSHOW);
+	//cap_0.set(CV_CAP_PROP_FRAME_WIDTH, 1280);
+	//cap_0.set(CV_CAP_PROP_FRAME_HEIGHT, 720);
+	cv::VideoCapture cap_1(1, CAP_DSHOW);
+	cap_1.set(CV_CAP_PROP_FRAME_WIDTH, 1280);
+	cap_1.set(CV_CAP_PROP_FRAME_HEIGHT, 720);
+	cv::VideoCapture cap_2(2, CAP_DSHOW);
+	cap_2.set(CV_CAP_PROP_FRAME_WIDTH, 1280);
+	cap_2.set(CV_CAP_PROP_FRAME_HEIGHT, 720);
+	cv::VideoCapture cap_3(3, CAP_DSHOW);
+	cap_3.set(CV_CAP_PROP_FRAME_WIDTH, 1280);
+	cap_3.set(CV_CAP_PROP_FRAME_HEIGHT, 720);
+	cv::VideoCapture cap_4(0, CAP_DSHOW);
+	cap_4.set(CV_CAP_PROP_FRAME_WIDTH, 1280);
+	cap_4.set(CV_CAP_PROP_FRAME_HEIGHT, 720);
 
 	cart_image = imread("./resource/image.jpg", IMREAD_COLOR);
 	cvtColor(cart_image, cart_image, COLOR_BGR2RGB);
@@ -209,11 +611,14 @@ int main(void)
 
 	mapInit(mapX, mapY);
 
-	bool img_init = false;
-	Mat top;
+	cv::Mat img0, img1, img2, img3, img4;
+	cv::Mat undistort_front, undistort_back, undistort_left, undistort_right;
+	cv::Mat top_front, top_back, top_left, top_right;
+
+	BevGenerator bev = BevGenerator();
+	Mat surround;
 
 	do {
-
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -239,26 +644,53 @@ int main(void)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-		/*
-		cap1 >> img_frame1;
-		cap2 >> img_frame2;
-		*/
+		// 1. 영상 획득 2
+		//cap_0 >> img0;
+		cap_1 >> img1;
+		cap_2 >> img2;
+		cap_3 >> img3;
+		cap_4 >> img4;
+		img1 = imread("front2.png");
+		img2 = imread("back2.png");
+		img3 = imread("left2.png");
+		img4 = imread("right2.png");
 
-		// 카메라에서 이미지 가져오는 함수 혹은 코드
-		// VideoCapture cap1(1), cap1(2);
 
-		// 왜곡을 없앤 이미지를 가져오는 함수
-		// &frong, &right, &back, &left
-		// getImg(&frong){};
-		//Mat top = imread("./resource/test.png");
-		//Mat top = getBowlImg(&frong, &right, &back, &left);
+		// 2. 왜곡 보정 (output : undistort_front, undistort_back, undistort_left, undistort_right)
+		cv::remap(img1, undistort_front, map1, map2, cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+		cv::remap(img2, undistort_back, map1, map2, cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+		cv::remap(img3, undistort_left, left_map1, left_map2, cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+		cv::remap(img4, undistort_right, map1, map2, cv::INTER_LINEAR, cv::BORDER_CONSTANT);
 
-		if (!img_init) {
-			top = getBowlImg();
-			img_init = true;
-		}
+		// 3. 탑뷰 전환 (output : top_front, top_back, top_left, top_right)
+		cv::warpPerspective(undistort_front, top_front, front_homography, cv::Size(1020, 1128));
+		cv::warpPerspective(undistort_back, top_back, back_homography, cv::Size(1020, 1128));
+		cv::warpPerspective(undistort_left, top_left, left_homography, cv::Size(1020, 1128));
+		cv::warpPerspective(undistort_right, top_right, right_homography, cv::Size(1020, 1128));
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, top.cols, top.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, top.ptr());
+		// 3-1. bowl View 전환
+		getBowlImg(img1, 0);
+		getBowlImg(img2, 3);
+		getBowlImg(img3, 2);
+		getBowlImg(img4, 1);
+
+		// 4. 차량 (Mat car)
+
+		// 5. 5개 합성
+		surround = bev.returning(top_front, top_back, top_left, top_right, car);
+		cv::resize(surround, surround, cv::Size(670, 752));
+		surround.convertTo(surround, CV_8UC3);
+		cv::imshow("surround1212", surround);
+		cv::imwrite("surround22.jpg", surround);
+
+		// 테스트용 (원하는 data를 2번째 인자에 입력하세요)
+		/*cv::imshow("1", undistort_front);
+		cv::imshow("2", undistort_back);
+		cv::imshow("3", undistort_left);
+		cv::imshow("4", undistort_back);*/
+		cv::waitKey(0);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bowlImg.cols, bowlImg.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, bowlImg.ptr());
 
 
 		glBindVertexArray(VertexArrayID[0]);
@@ -336,126 +768,201 @@ int main(void)
 	return 0;
 }
 
-// getBowlImg(&frong, &right, &back, &left)
-Mat getBowlImg() {
+Mat padding(Mat img, int width, int height) {
+	Mat dst_constant;
+	int H = 450;
+	int W = 320;
+
+	int top = (height - H) / 2;
+	int bottom = (height - H) / 2;
+	if (top + bottom + H < height) { bottom += 1; };
+
+	int left = (width - W) / 2;
+	int right = (width - W) / 2;
+	if (left + right + W < width) { right += 1; };
+
+	cv::copyMakeBorder(img, dst_constant, top, bottom, left, right, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
+
+	return dst_constant;
+}
+
+Mat color_balance(Mat image) {
+	Mat bgr[3], answer;
+	cv::split(image, bgr);
+
+	Scalar scalar = mean(image);
+	double B = scalar[0];
+	double G = scalar[1];
+	double R = scalar[2];
+
+	double K = (R + G + B) / 3;
+	double Kb = K / B;
+	double Kg = K / G;
+	double Kr = K / R;
+	cv::addWeighted(bgr[0], Kb, 0, 0, 0, bgr[0]);
+	cv::addWeighted(bgr[1], Kg, 0, 0, 0, bgr[1]);
+	cv::addWeighted(bgr[2], Kr, 0, 0, 0, bgr[2]);
+
+	cv::merge(bgr, 3, answer);
+
+	return answer;
+}
+
+Mat* luminance_balance(Mat* images) {
+	Mat front, back, left, right;
+	Mat split_front[3], split_back[3], split_left[3], split_right[3];
+	Scalar V_f, V_b, V_l, V_r, V_mean, vf, vb, vl, vr;
+	Mat Front, Back, Left, Right;
+	Mat *answer = new Mat[4];
+	cv::cvtColor(images[0], front, COLOR_BGR2HSV);
+	cv::cvtColor(images[1], back, COLOR_BGR2HSV);
+	cv::cvtColor(images[2], left, COLOR_BGR2HSV);
+	cv::cvtColor(images[3], right, COLOR_BGR2HSV);
+
+	cv::split(front, split_front);
+	cv::split(back, split_back);
+	cv::split(left, split_left);
+	cv::split(right, split_right);
+
+	V_f = cv::mean(split_front[2]);
+	V_b = cv::mean(split_back[2]);
+	V_l = cv::mean(split_left[2]);
+	V_r = cv::mean(split_right[2]);
+	V_mean = (V_f + V_b + V_l + V_r) / 4;
+
+	cv::add(vf, (V_mean - V_f), vf);
+	cv::add(vl, (V_mean - V_l), vl);
+	cv::add(vr, (V_mean - V_r), vr);
+
+	cv::merge(split_front, 3, Front);
+	cv::merge(split_back, 3, Back);
+	cv::merge(split_left, 3, Left);
+	cv::merge(split_right, 3, Right);
+
+	cv::cvtColor(Front, answer[0], COLOR_HSV2BGR);
+	cv::cvtColor(Back, answer[1], COLOR_HSV2BGR);
+	cv::cvtColor(Left, answer[2], COLOR_HSV2BGR);
+	cv::cvtColor(Right, answer[3], COLOR_HSV2BGR);
+
+	cout << "test3" << answer[0].size << endl;
+
+	return answer;
+}
+
+void getBowlImg(Mat &cameraImg, int mode) {
 	// 이미지 경로
 	String absolute_path = "";
 	String files[4] = { "front.png", "right.png", "left.png", "back.png"};
 
-	Mat bowlImg;	// bowlView에 넣을 이미지
-	Image img;	// 카메라에서 받아온 이미지
 	double degree;	// 이미지를 회전시킬 정도 
-	bool init = false;	// bowlImg 크기 초기화 여부
+	// Mat 이미지 Image로 변환
+	Magick::Image img(cameraImg.cols, cameraImg.rows, "BGR", Magick::CharPixel, (char *)cameraImg.data);
 
 	// 파이썬의 "arc" 그냥 왜곡을 하는 방법 중 하나
-	MagickCore::DistortMethod method = ArcDistortion;
-	
-	for (int i = 0; i < 4; i++) {
-		// 이미지 불러오기
-		img = Image(absolute_path + files[i]);
+	MagickCore::DistortMethod method = Magick::ArcDistortion;
 
-		if (i == 0){
-			degree = 315;
-		}else if (i == 1) {
-			degree = 45 + 4;
-		}else if (i == 2) {
-			degree = 225 - 4;
-		}else{
-			degree = 135;
-		}
-
-		// 아래의 파라미터에 따라서 왜곡 진행
-		double listOfArguments[2] = { 90, degree };
-		img.distort(method, 2, listOfArguments);
-
-		// 이미지 크기
-		const size_t  w = img.columns(), h = img.rows();
-
-		if (!init) {
-			// zero함수를 사용하면 Scalar(0)으로 고정되어 3차원 배열이 불가능하다.
-			bowlImg = Mat(w * 1.5, h * 1.5, CV_8UC3, Scalar(0, 0, 0));
-			init = true;
-		}
-
-		// Image 클래스의 각 픽셀 정보를 가져오기 위한 변수
-		Quantum *pixel_cache = img.getPixels(0, 0, w, h);
-
-		// bowlView 변수에 왜곡을 넣은 이미지 붙여넣기
-
-		int x_fin = h;
-		int y_fin = w;
-		int x0 = x_fin - 350;
-		int y0 = y_fin - 350;
-
-		if (i == 0) {
-			Mat temp = Mat(h, w, CV_8UC3, Scalar(255, 255, 255));
-			img.write(0, 0, w, h, "BGR", Magick::CharPixel, temp.data);
-
-			Mat imageROI = bowlImg(Rect(0, 0, y0, x0));
-			temp = temp(Rect(0, 0, y0, x0));
-
-			addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
-		}
-		else if (i == 1) {
-			int x1 = 10;
-			int y1 = (int)(y_fin / 4) - 25;
-
-			int x1_move = 0;
-			int y1_move = 25;
-
-			int x1_size = x_fin - x1;
-			int y1_size = y_fin - y1;
-
-			Mat temp = Mat(h, w, CV_8UC3, Scalar(255, 255, 255));
-			img.write(0, 0, w, h, "BGR", Magick::CharPixel, temp.data);
-
-			Mat imageROI = bowlImg(Rect(y0 + y1_move, x1_move, y1_size, x1_size));
-			temp = temp(Rect(y1, x1, y1_size, x1_size));
-
-			addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
-			imshow("test", bowlImg);
-		}
-		else if (i == 2) {
-			int x2 = (int)(x_fin / 4 - 40);
-			int y2 = (int)(0);
-
-			int x2_move = 0;
-			int y2_move = 30;
-
-			y_fin = int(y_fin * 3 / 4);
-
-			int x2_size = x_fin - x2;
-			int y2_size = y_fin - y2;
-
-			Mat temp = Mat(h, w, CV_8UC3, Scalar(255, 255, 255));
-			img.write(0, 0, w, h, "BGR", Magick::CharPixel, temp.data);		
-
-			Mat imageROI = bowlImg(Rect(y2_move, x0 + x2_move, y2_size, x2_size));
-			temp = temp(Rect(y2, x2, y2_size, x2_size)).clone();
-
-			addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
-		}
-		else {
-			int x3 = (int)(x_fin / 4);
-			int y3 = (int)(y_fin / 4 - 30);
-
-			int x3_move = 0;
-			int y3_move = 0;
-
-			int x3_size = x_fin - x3;
-			int y3_size = y_fin - y3;
-
-			Mat temp = Mat(h, w, CV_8UC3, Scalar(255, 255, 255));
-			img.write(0, 0, w, h, "BGR", Magick::CharPixel, temp.data);
-
-			Mat imageROI = bowlImg(Rect(y0 + y3_move, x0 + x3_move, y3_size, x3_size));
-			temp = temp(Rect(y3, x3, y3_size, x3_size)).clone();
-
-			addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
-		}
-
+	if (mode == 0){
+		degree = 315;
+	}else if (mode == 1) {
+		degree = 45 + 4;
+	}else if (mode == 2) {
+		degree = 225 - 4;
+	}else{
+		degree = 135;
 	}
 
-	imshow("top", bowlImg);
-	return bowlImg;
+	// 아래의 파라미터에 따라서 왜곡 진행
+	double listOfArguments[2] = { 90, degree };
+	img.distort(method, 2, listOfArguments);
+
+	// 이미지 크기
+	const size_t  w = img.columns(), h = img.rows();
+
+	// bowlImg 초기화
+	if (!bowlInit) {
+		// zero함수를 사용하면 Scalar(0)으로 고정되어 3차원 배열이 불가능하다.
+		bowlImg = Mat(w * 1.5, h * 1.5, CV_8UC3, Scalar(0, 0, 0));
+		bowlInit = true;
+	}
+
+	// bowlView 변수에 왜곡을 넣은 이미지 붙여넣기
+
+	int x_fin = h;
+	int y_fin = w;
+	int x0 = x_fin - 350;
+	int y0 = y_fin - 350;
+
+	// 왜곡을 만든 Image 를 다시 Mat으로 변환
+	Mat temp = Mat(h, w, CV_8UC3, Scalar(255, 255, 255));
+	img.write(0, 0, w, h, "BGR", Magick::CharPixel, temp.data);
+
+	if (mode == 0) {
+		//temp = temp(Rect(0, 0, y0, x0));
+		//Mat gray = Mat(x0, y0, CV_8UC1, Scalar(0));
+		Mat gray = Mat(h, w, CV_8UC1, Scalar(0));
+		cv::cvtColor(temp, gray, cv::COLOR_BGR2GRAY);
+		Mat imageROI = bowlImg(Rect(0, 0, gray.cols, gray.rows));
+		
+		temp.copyTo(imageROI, gray);
+		//imshow("img0put", bowlImg);
+		//addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
+	}
+	else if (mode == 1) {
+		int x1 = 10;
+		int y1 = (int)(y_fin / 4) - 25;
+
+		int x1_move = 0;
+		int y1_move = 25;
+
+		int x1_size = x_fin - x1;
+		int y1_size = y_fin - y1;
+
+		Mat imageROI = bowlImg(Rect(y0 + y1_move, x1_move, y1_size, x1_size));
+		temp = temp(Rect(y1, x1, y1_size, x1_size));
+		Mat gray = Mat(x1_size, y1_size, CV_8UC1, Scalar(0));
+		cv::cvtColor(temp, gray, cv::COLOR_BGR2GRAY);
+
+		temp.copyTo(imageROI, gray);
+		//addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
+	}
+	else if (mode == 2) {
+		int x2 = (int)(x_fin / 4 - 40);
+		int y2 = (int)(0);
+
+		int x2_move = 0;
+		int y2_move = 30;
+
+		y_fin = int(y_fin * 3 / 4);
+
+		int x2_size = x_fin - x2;
+		int y2_size = y_fin - y2;
+
+		Mat imageROI = bowlImg(Rect(y2_move, x0 + x2_move, y2_size, x2_size));
+		temp = temp(Rect(y2, x2, y2_size, x2_size));
+		Mat gray = Mat(x2_size, y2_size, CV_8UC1, Scalar(0));
+		cv::cvtColor(temp, gray, cv::COLOR_BGR2GRAY);
+
+		temp.copyTo(imageROI, gray);
+		//addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
+	}
+	else {
+		int x3 = (int)(x_fin / 4);
+		int y3 = (int)(y_fin / 4 - 30);
+
+		int x3_move = 0;
+		int y3_move = 0;
+
+		int x3_size = x_fin - x3;
+		int y3_size = y_fin - y3;
+
+		Mat imageROI = bowlImg(Rect(y0 + y3_move, x0 + x3_move, y3_size, x3_size));
+		temp = temp(Rect(y3, x3, y3_size, x3_size));
+		Mat gray = Mat(x3_size, y3_size, CV_8UC1, Scalar(0));
+		cv::cvtColor(temp, gray, cv::COLOR_BGR2GRAY);
+
+		temp.copyTo(imageROI, gray);
+		//addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
+	}
+
+	imshow("bowlImg", bowlImg);
 }
