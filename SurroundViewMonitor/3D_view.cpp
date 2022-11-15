@@ -1,9 +1,10 @@
 // Include standard headers
 #include <iostream>
 #include <stdio.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 #include <vector>
-#include <cmath>
+//#include <cmath>
+#include <time.h>
 
 // Include GLEWc
 #include <GL/glew.h>
@@ -50,6 +51,7 @@ Mat img_frame2;
 
 Mat cart_image;
 Mat bowlImg;
+//size_t  w, h;
 
 float k1 = 0.2;
 float k2 = 0.8;
@@ -72,6 +74,10 @@ int CAR_WIDTH = 155;
 int CAR_HEIGHT = 315;
 float FOCAL_SCALE = 0.65;
 float SIZE_SCALE = 1;
+
+// 시간확인 디버깅용
+clock_t start = clock();
+clock_t endtime;
 
 
 // 함수 선언 (내부 코드 선언은 main 함수 아래로)
@@ -360,6 +366,7 @@ Mat wave(Mat image) {
 
 int main(void)
 {
+	start = clock();
 	// C:/Users/multicampus/Desktop/ssafy/self_project/gitlab/SurroundViewMonitor
 	Magick::InitializeMagick("");
 
@@ -417,6 +424,7 @@ int main(void)
 	// 안쪽면만 그림
 	glCullFace(GL_FRONT);
 
+	/*
 	// 호모그래피 배열 초기화
 	cv::Mat front_homography = cv::Mat(3, 3, cv::DataType<double>::type);
 	front_homography.at<double>(0, 0) = 3.8290818190655296;
@@ -557,6 +565,7 @@ int main(void)
 
 	cart_image = imread("./resource/image.jpg", IMREAD_COLOR);
 	cvtColor(cart_image, cart_image, COLOR_BGR2RGB);
+	*/
 
 	GLuint VertexArrayID[2];
 	glGenVertexArrays(2, VertexArrayID);
@@ -618,6 +627,17 @@ int main(void)
 	BevGenerator bev = BevGenerator();
 	Mat surround;
 
+	img1 = imread("front.png");
+	img2 = imread("back.png");
+	img3 = imread("left.png");
+	img4 = imread("right.png");
+
+	getBowlImg(img1, 0);
+	
+	getBowlImg(img3, 2);
+	getBowlImg(img4, 1);
+	getBowlImg(img2, 3);
+
 	do {
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -644,6 +664,7 @@ int main(void)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
+		/*
 		// 1. 영상 획득 2
 		//cap_0 >> img0;
 		cap_1 >> img1;
@@ -667,13 +688,28 @@ int main(void)
 		cv::warpPerspective(undistort_back, top_back, back_homography, cv::Size(1020, 1128));
 		cv::warpPerspective(undistort_left, top_left, left_homography, cv::Size(1020, 1128));
 		cv::warpPerspective(undistort_right, top_right, right_homography, cv::Size(1020, 1128));
-
+		*/
 		// 3-1. bowl View 전환
-		getBowlImg(img1, 0);
-		getBowlImg(img2, 3);
-		getBowlImg(img3, 2);
-		getBowlImg(img4, 1);
+		
+		//endtime = clock();
+		//cout << "start : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+		
+		//getBowlImg(img1, 0);
+		//endtime = clock();
+		//cout << "img1 : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+		//getBowlImg(img2, 3);
+		//endtime = clock();
+		//cout << "img2 : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+		//getBowlImg(img3, 2);
+		//endtime = clock();
+		//cout << "img3 : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+		//getBowlImg(img4, 1);
+		//endtime = clock();
+		//cout << "img4 : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
+		//imwrite("bowlImg.jpg", bowlImg);
+
+		/*
 		// 4. 차량 (Mat car)
 
 		// 5. 5개 합성
@@ -688,7 +724,8 @@ int main(void)
 		cv::imshow("2", undistort_back);
 		cv::imshow("3", undistort_left);
 		cv::imshow("4", undistort_back);*/
-		cv::waitKey(0);
+		//cv::waitKey(0);
+		
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bowlImg.cols, bowlImg.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, bowlImg.ptr());
 
@@ -750,6 +787,9 @@ int main(void)
 		// Swap buffers
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
+		//endtime = clock();
+		//cout << "gl end : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
 	} // Check if the ESC key was pressed or the window was closed
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
@@ -850,13 +890,14 @@ Mat* luminance_balance(Mat* images) {
 }
 
 void getBowlImg(Mat &cameraImg, int mode) {
-	// 이미지 경로
-	String absolute_path = "";
-	String files[4] = { "front.png", "right.png", "left.png", "back.png"};
+	//endtime = clock();
+	//cout << "getBowlImg start : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
 	double degree;	// 이미지를 회전시킬 정도 
 	// Mat 이미지 Image로 변환
 	Magick::Image img(cameraImg.cols, cameraImg.rows, "BGR", Magick::CharPixel, (char *)cameraImg.data);
+	//endtime = clock();
+	//cout << "mat to image transform : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
 	// 파이썬의 "arc" 그냥 왜곡을 하는 방법 중 하나
 	MagickCore::DistortMethod method = Magick::ArcDistortion;
@@ -875,94 +916,110 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	double listOfArguments[2] = { 90, degree };
 	img.distort(method, 2, listOfArguments);
 
-	// 이미지 크기
-	const size_t  w = img.columns(), h = img.rows();
+	//endtime = clock();
+	//cout << "distort : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
 	// bowlImg 초기화
 	if (!bowlInit) {
+		// 이미지 크기
+		//w = img.columns(), h = img.rows();
 		// zero함수를 사용하면 Scalar(0)으로 고정되어 3차원 배열이 불가능하다.
-		bowlImg = Mat(w * 1.5, h * 1.5, CV_8UC3, Scalar(0, 0, 0));
+		bowlImg = Mat(img.columns() * 1.30, img.rows() * 1.30, CV_8UC3, Scalar(0, 0, 0));
 		bowlInit = true;
 	}
 
 	// bowlView 변수에 왜곡을 넣은 이미지 붙여넣기
 
-	int x_fin = h;
-	int y_fin = w;
-	int x0 = x_fin - 350;
-	int y0 = y_fin - 350;
+	// x가 높이, y가 가로 길이
+	// 순서대로 이미지가 차지하는 폭을 의미한다.
+	// 전방이미지는 가로 0 ~ top_center, 세로 0 ~ left_center,
+	// 우측이미지는 가로 top_center ~ bowlImg.col, 세로 0 ~ right_center,
+	// 좌측이미지는 가로 0 ~ bottom_center, 세로 left_center ~  bowlImg.col,
+	// 후측이미지는 가로 bottom_center ~ bowlImg.col, 세로 right_center ~  bowlImg.col 을 차지한다.
+	int left_center = bowlImg.rows * 0.5;
+	int right_center = bowlImg.rows * 0.52;
+	int top_center = bowlImg.cols * 0.5;
+	int bottom_center = bowlImg.cols * 0.52;
 
 	// 왜곡을 만든 Image 를 다시 Mat으로 변환
-	Mat temp = Mat(h, w, CV_8UC3, Scalar(255, 255, 255));
-	img.write(0, 0, w, h, "BGR", Magick::CharPixel, temp.data);
+	Mat temp = Mat(img.rows(), img.columns(), CV_8UC3, Scalar(255, 255, 255));
+	img.write(0, 0, img.columns(), img.rows(), "BGR", Magick::CharPixel, temp.data);
+
+	//endtime = clock();
+	//cout << "image to mat : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
 	if (mode == 0) {
-		//temp = temp(Rect(0, 0, y0, x0));
-		//Mat gray = Mat(x0, y0, CV_8UC1, Scalar(0));
-		Mat gray = Mat(h, w, CV_8UC1, Scalar(0));
-		cv::cvtColor(temp, gray, cv::COLOR_BGR2GRAY);
-		Mat imageROI = bowlImg(Rect(0, 0, gray.cols, gray.rows));
+		//imshow("front", temp);
+		int img_x_move = 0;
+		int img_y_move = 25;
+		float resize = 0.9;
+
+		//imshow("front", temp);
+		Mat imageROI = bowlImg(Rect(0, 0, top_center, left_center));
+		Mat resized;
+		cv::resize(temp, resized, Size(temp.cols * resize, temp.rows * resize));
+		resized = resized(Rect(img_y_move, img_x_move, top_center, left_center));
+		Mat gray;
+		cv::cvtColor(resized, gray, cv::COLOR_BGR2GRAY);
 		
-		temp.copyTo(imageROI, gray);
-		//imshow("img0put", bowlImg);
-		//addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
+		resized.copyTo(imageROI, gray);
 	}
 	else if (mode == 1) {
-		int x1 = 10;
-		int y1 = (int)(y_fin / 4) - 25;
+		//imshow("right", temp);
+		int img_x_move = 82;
+		int img_y_move = 358;
+		float resize = 1;
 
-		int x1_move = 0;
-		int y1_move = 25;
+		int height = right_center;
+		int width = bowlImg.cols - top_center;
 
-		int x1_size = x_fin - x1;
-		int y1_size = y_fin - y1;
+		Mat imageROI = bowlImg(Rect(top_center, 0, width, height));
+		Mat resized;
+		cv::resize(temp, resized, Size(temp.cols * resize, temp.rows * resize));
+		resized = resized(Rect(img_y_move, img_x_move, width, height));
+		Mat gray;
+		cv::cvtColor(resized, gray, cv::COLOR_BGR2GRAY);
 
-		Mat imageROI = bowlImg(Rect(y0 + y1_move, x1_move, y1_size, x1_size));
-		temp = temp(Rect(y1, x1, y1_size, x1_size));
-		Mat gray = Mat(x1_size, y1_size, CV_8UC1, Scalar(0));
-		cv::cvtColor(temp, gray, cv::COLOR_BGR2GRAY);
-
-		temp.copyTo(imageROI, gray);
-		//addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
+		resized.copyTo(imageROI, gray);
 	}
 	else if (mode == 2) {
-		int x2 = (int)(x_fin / 4 - 40);
-		int y2 = (int)(0);
+		//imshow("left", temp);
+		int img_x_move = 330;
+		int img_y_move = 75;
+		float resize = 1;
 
-		int x2_move = 0;
-		int y2_move = 30;
+		int height = bowlImg.rows - left_center;
+		int width = bottom_center;
 
-		y_fin = int(y_fin * 3 / 4);
+		Mat imageROI = bowlImg(Rect(0, left_center, width, height));
+		Mat resized;
+		cv::resize(temp, resized, Size(temp.cols * resize, temp.rows * resize));
+		resized = resized(Rect(img_y_move, img_x_move, width, height));
+		Mat gray;
+		cv::cvtColor(resized, gray, cv::COLOR_BGR2GRAY);
 
-		int x2_size = x_fin - x2;
-		int y2_size = y_fin - y2;
-
-		Mat imageROI = bowlImg(Rect(y2_move, x0 + x2_move, y2_size, x2_size));
-		temp = temp(Rect(y2, x2, y2_size, x2_size));
-		Mat gray = Mat(x2_size, y2_size, CV_8UC1, Scalar(0));
-		cv::cvtColor(temp, gray, cv::COLOR_BGR2GRAY);
-
-		temp.copyTo(imageROI, gray);
-		//addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
+		resized.copyTo(imageROI, gray);
 	}
 	else {
-		int x3 = (int)(x_fin / 4);
-		int y3 = (int)(y_fin / 4 - 30);
+		//imshow("back", temp);
+		int img_x_move = 350;
+		int img_y_move = 350;
+		float resize = 1.03;
 
-		int x3_move = 0;
-		int y3_move = 0;
+		int height = bowlImg.rows - right_center;
+		int width = bowlImg.cols - bottom_center;
 
-		int x3_size = x_fin - x3;
-		int y3_size = y_fin - y3;
+		Mat imageROI = bowlImg(Rect(bottom_center, right_center, width, height));
+		Mat resized;
+		cv::resize(temp, resized, Size(temp.cols * resize, temp.rows * resize));
+		resized = resized(Rect(img_y_move, img_x_move, width, height));
+		Mat gray;
+		cv::cvtColor(resized, gray, cv::COLOR_BGR2GRAY);
 
-		Mat imageROI = bowlImg(Rect(y0 + y3_move, x0 + x3_move, y3_size, x3_size));
-		temp = temp(Rect(y3, x3, y3_size, x3_size));
-		Mat gray = Mat(x3_size, y3_size, CV_8UC1, Scalar(0));
-		cv::cvtColor(temp, gray, cv::COLOR_BGR2GRAY);
-
-		temp.copyTo(imageROI, gray);
-		//addWeighted(imageROI, 1.0, temp, 1.0, 0.0, imageROI);
+		resized.copyTo(imageROI, gray);
 	}
 
-	imshow("bowlImg", bowlImg);
+	Mat bowlTemp;
+	cv::resize(bowlImg, bowlTemp, cv::Size(1000, 1000));
+	imshow("bowlImg", bowlTemp);
 }
