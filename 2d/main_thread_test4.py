@@ -2,14 +2,16 @@ import cv2
 import numpy as np
 import argparse
 import time
+import multiprocessing
+
 
 parser = argparse.ArgumentParser(description="Generate Surrounding Camera Bird Eye View")
 parser.add_argument('-fw', '--FRAME_WIDTH', default=1280, type=int, help='Camera Frame Width')      # 원본 이미지 길이
 parser.add_argument('-fh', '--FRAME_HEIGHT', default=720, type=int, help='Camera Frame Height')    # 원본 이미지 높이
-parser.add_argument('-bew', '--BEV_WIDTH', default= 1020, type=int, help='BEV Frame Width')       # 탑뷰 이미지 길이
-parser.add_argument('-beh', '--BEV_HEIGHT', default= 1128, type=int, help='BEV Frame Height')     # 탑뷰 이미지 높이
-parser.add_argument('-cw', '--CAR_WIDTH', default=200, type=int, help='Car Frame Width')        # 차량 이미지 길이
-parser.add_argument('-ch', '--CAR_HEIGHT', default=400, type=int, help='Car Frame Height')      # 차량 이미지 높이
+parser.add_argument('-bew', '--BEV_WIDTH', default= 680, type=int, help='BEV Frame Width')       # 탑뷰 이미지 길이
+parser.add_argument('-beh', '--BEV_HEIGHT', default= 752, type=int, help='BEV Frame Height')     # 탑뷰 이미지 높이
+parser.add_argument('-cw', '--CAR_WIDTH', default=133, type=int, help='Car Frame Width')        # 차량 이미지 길이
+parser.add_argument('-ch', '--CAR_HEIGHT', default=267, type=int, help='Car Frame Height')      # 차량 이미지 높이
 parser.add_argument('-fs', '--FOCAL_SCALE', default=0.65, type=float, help='Camera Undistort Focal Scale')     # 카메라 왜곡되지 않은 초점 스케일
 parser.add_argument('-ss', '--SIZE_SCALE', default=1, type=float, help='Camera Undistort Size Scale')       # 카메라 왜곡되지 않은 크기 스케일
 parser.add_argument('-blend','--BLEND_FLAG', default=False, type=bool, help='Blend BEV Image (Ture/False)')
@@ -136,7 +138,7 @@ class BevGenerator:
             self.masks = [Mask('front'), Mask('back'),  # 10-1
                           Mask('left'), Mask('right')]
         else:
-            print("1111")
+            # print("1111")
             self.masks = [BlendMask('front'), BlendMask('back'), #10-2
                       BlendMask('left'), BlendMask('right')]
 
@@ -361,21 +363,86 @@ class BlendMask:
             maskA[y, x] = distA**2 / (distA**2 + distB**2 + 1e-6) * 255
         return maskA
     
-    def __call__(self, img):
+    def __call__(self, img): 
         return (img * self.weight).astype(np.uint8)   
 
-front_homography = np.array([[3.8290818190655296, 5.66226108412413, -1961.3463578215583], [0.04676494495778877, 7.593794538002965, -1398.2503661266026], [9.936840064368021e-05, 0.011048826673722773, 1.0]])
-back_homography = np.array([[-3.6014363756395578, 4.36751919471232, 2793.845376423345], [-0.16343764199990043, 3.070397421396325, 2357.357976286147], [-0.00020012270934899256, 0.008545448669492679, 1.0]])
-right_homography = np.array([[-0.08221005850690113, 1.6235034060147169, 2032.459375714023], [2.945881257892563, 3.582400762214573, -1439.2015581787357], [-0.00011329233289173604, 0.0068701395422870026, 0.9999999999999999]])
-left_homography = np.array([[0.1022385737675907, 5.770995782571725, -1228.0525962849354], [-3.1690352115113147, 3.516499167979982, 2659.2521230613215], [0.0002888891947907289, 0.006800266459274919, 1.0]])
+front_homography = np.array( [[2.5497687517147827, 3.7714976196027767, -1305.9160615726332], [0.030862052170984967, 5.059221608198009, -931.4750390726253], [9.725404703608287e-05, 0.01104129508400122, 1.0]])
+back_homography = np.array([[-2.4069730736783495, 2.9205430982962506, 1867.7871790347892], [-0.1060967932993048, 2.054683518354428, 1574.5818360404066], [-0.00019438787613884742, 0.00857226861416168, 1.0]])
+right_homography = np.array([[-0.056907775045504295, 1.0672176811325182, 1345.8228403927208], [1.9441218165848122, 2.3632792237771953, -948.6254186141198], [-0.00011958960708869353, 0.006792484660770964, 1.0]])
+left_homography = np.array([[0.06600348375424579, 3.8068476399183395, -809.0417825745883], [-2.094846225115616, 2.3159310874593304, 1758.6799688514989], [0.0002774157265438967, 0.006716667751837278, 0.9999999999999999]])
 
 
+def front_read_top(d):              
+    start_time = time.time()  
+    # ret1, d['new_front_frame'] = cap1.read()
+    ret1, d['new_front_frame'] = True, cv2.imread('C:/Users/multicampus/Desktop/front.png')
+    d['new_front_undi'] = cv2.remap(d['new_front_frame'], map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)   
+    d['new_front_top'] = cv2.warpPerspective(d['new_front_undi'], front_homography, (680, 752)) 
 
-# 1. 4 방향 이미지 read
+    d['pro1'] = True
+    end_time = time.time()
+    print(f'--front_read_top : {1/(end_time-start_time)} / {end_time-start_time:.5f}')   
+    
+        
+def back_read_top(d):   
+    start_time = time.time()  
+    # ret2, d['back_frame'] = cap2.read()   
+    ret1, d['new_back_frame'] = True, cv2.imread('C:/Users/multicampus/Desktop/back.png')
+    d['new_back_undi'] = cv2.remap(d['new_back_frame'], map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)     
+    d['new_back_top'] = cv2.warpPerspective(d['new_back_undi'], back_homography, (680, 752)) 
+
+    d['pro2'] = True
+    end_time = time.time()
+    print(f'--back_read_top : {1/(end_time-start_time)} / {end_time-start_time:.5f}')   
+    
+    
+def left_read_top(d):      
+    start_time = time.time()  
+    # ret3, d['left_frame'] = cap3.read()
+    ret3, d['new_left_frame'] = True, cv2.imread('C:/Users/multicampus/Desktop/left.png')
+
+    d['new_left_undi'] = cv2.remap(d['new_left_frame'], left_map1, left_map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)    
+    d['new_left_top'] = cv2.warpPerspective(d['new_left_undi'], left_homography, (680, 752)) 
+
+    d['pro3'] = True
+    end_time = time.time()
+
+    print(f'--left_read_top : {1/(end_time-start_time)} / {end_time-start_time:.5f}')   
+    
+    
+def right_read_top(d):     
+    start_time = time.time()
+    # d['right_frame_check'], d['right_frame'] = cap4.read()    
+    ret4, d['new_right_frame'] = True, cv2.imread('C:/Users/multicampus/Desktop/right.png')
+    
+    d['new_right_undi']  = cv2.remap(d['new_right_frame'], map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)     
+    d['new_right_top'] = cv2.warpPerspective(d['new_right_undi'], right_homography, (680, 752))
+
+    d['pro4'] = True
+    end_time = time.time()
+    print(f'--right_read_top : {1/(end_time-start_time)} / {end_time-start_time:.5f}')   
+            
+
+def make_bev(d):   
+    start_time = time.time()
+    if not d['is_first']:
+        d['surround'] = cv2.resize(bev(d['new_front_top'],d['new_back_top'],d['new_left_top'],d['new_right_top'], car) ,(445,500) )         
+        d['surround_check'] = True
+
+    d['pro5'] = True
+
+    end_time = time.time()
+    print(f'--make_bev : {1/(end_time-start_time)} / {end_time-start_time:.5f}')   
+
+    
+  
+
+
+    
 cap1 = cv2.VideoCapture(0)
-cap2 = cv2.VideoCapture(0)
-cap3 = cv2.VideoCapture(0)
-cap4 = cv2.VideoCapture(0)
+cap2 = cv2.VideoCapture(1)
+cap3 = cv2.VideoCapture(3)
+cap4 = cv2.VideoCapture(4)
 
 cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -386,113 +453,155 @@ cap3.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap4.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 cap4.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 
-
 args = BevGenerator.get_args()            
-args.CAR_WIDTH = 155
-args.CAR_HEIGHT = 315             
+args.CAR_WIDTH = 103
+args.CAR_HEIGHT = 210             
 bev = BevGenerator(blend=True, balance=True)
 
-mode = 'front'
 
-screen = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/screen.jpg')
+screen = cv2.imread('C:/Users/multicampus/Desktop/screen.jpg')
 screen = cv2.resize(screen,(int(1536),int(860)))
 font = cv2.FONT_HERSHEY_DUPLEX 
-car = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/2d/data/porche2.png')
-car = cv2.resize(car,(320,450))
+car = cv2.imread('C:/Users/multicampus/Desktop/porche.png')
+car = cv2.resize(car,(213,300))
 car = padding(car, BEV_WIDTH, BEV_HEIGHT)
-cv2.namedWindow('screen', cv2.WND_PROP_FULLSCREEN)
-cv2.setWindowProperty('screen', cv2.WND_PROP_FULLSCREEN,
-                          cv2.WINDOW_FULLSCREEN)
 
 
+if __name__ == '__main__':
 
-prev_time = 0
-total_frames = 0
-start_time = time.time()
+    print('process start')
 
-while(True):
+    manager = multiprocessing.Manager()    
+    d = manager.dict()
 
-    curr_time = time.time()
+    d['is_first'] = True
+    d['surround_check'] = False
+    mode = 'front' 
+    # d['new_front_undi'] = d['new_back_undi'] = d['new_left_undi'] = d['new_right_undi'] = None
+    # d['new_front_top'] = d['new_back_top'] = d['new_left_top'] = d['new_right_top'] = None      
 
-    ret1, frame1 = cap1.read()    # Read 결과와 frame
-    ret2, frame2 = cap1.read()
-    ret3, frame3 = cap1.read()
-    ret4, frame4 = cap1.read()
-
-
-
-
-# 2. 왜곡 보정
-    # 왼쪽 프레임 번호는 직접 찾아서 입력해줘야한다.
-    undistorted_front = undistort(frame1, 1.5)         
-    undistorted_back = undistort(frame2, 1.5)        
-    undistorted_right = undistort(frame3, 1.5)        
-    undistorted_left = undistort_left(frame4, 1.5) 
-
-    # val = 70
-    # array = np.full(undistorted_left.shape, (val,val,val), dtype=np.uint8)
-    # undistorted_left = cv2.add(undistorted_left, array)
-
-# 3. 탑뷰 전환 (호모그래피)
-
-    top_front = cv2.warpPerspective(undistorted_front, front_homography, (1020, 1128)) 
-    top_back = cv2.warpPerspective(undistorted_back, back_homography, (1020, 1128)) 
-    top_right = cv2.warpPerspective(undistorted_right, right_homography, (1020, 1128)) 
-    top_left = cv2.warpPerspective(undistorted_left, left_homography, (1020, 1128)) 
+    prev_time = 0
+    total_frames = 0
     
-    # cv2.imshow('car', car)
 
-# 4. 이미지 합성
-    surround = bev(top_front, top_back, top_left, top_right, car)         
+    while True:
+        d['pro1'] = d['pro2'] = d['pro3'] = d['pro4'] = d['pro5'] = False
+        all_start_time = time.time()
+        # p.map(, [(1,2,3), (1,2,3), (1,2,3)])
+
+        start_time = time.time()
+        front_read_top_process = multiprocessing.Process(target=front_read_top,args=(d,))
+        back_read_top_process = multiprocessing.Process(target=back_read_top,args=(d,))
+        left_read_top_process = multiprocessing.Process(target=left_read_top,args=(d,))
+        right_read_top_process = multiprocessing.Process(target=right_read_top,args=(d,))
+        make_bev_process = multiprocessing.Process(target=make_bev,args=(d,))
+        end_time = time.time()        
+        print(f'pro-make : {end_time-start_time:.5f}')
+
+
+
+        start_time = time.time()
+        processes = [front_read_top_process,back_read_top_process,left_read_top_process,right_read_top_process,make_bev_process]
+        for process in processes:
+            process.start()
+        end_time = time.time()
+        print(f'pro-start : {end_time-start_time:.5f}')
+
+
+        
+
+        start_time = time.time()    
+        if d['surround_check']:
+
+            if mode == 'front':
+                view = d['new_front_undi'][0+40:720-60,0+100:1280-100]   #620,1080
+
+            elif mode == 'back':
+                view = d['new_back_undi'][0+40:720-60,0+100:1280-100]   #620,1080
+
+            elif mode == 'left':
+                view = d['new_left_undi'][0+40:720-60,0+80:1280-80]   #620,1080
+
+            elif mode == 'right':
+                view = d['new_right_undi'][0+40:720-60,0+120:1280-120]   #620,1080
+
+            view = cv2.resize(view,(870,500)) 
+            in_screen = cv2.hconcat([view, d['surround']]) 
+
+            screen[190:190+in_screen.shape[0], 50:50+in_screen.shape[1]] = in_screen         
+            cv2.putText(screen, mode.upper(), (60, 225), font, 1,(0,255,255), 2, cv2.LINE_AA)   
+            cv2.imshow('screen', screen)
+
+            key = cv2.waitKey(1)
+
+            if key == ord('q'):
+                mode = 'front'
+            elif key == ord('w'):
+                mode = 'back'
+            elif key == ord('e'):
+                mode = 'left'
+            elif key == ord('r'):
+                mode = 'right'
+
+            elif key == ord('c'):
+                cv2.destroyAllWindows()
+
+        end_time = time.time()
+        print(f'show : {end_time-start_time:.5f}')
+
+
+        
+
+
+        
+
+
+
+           
+
+
+            
+        start_time = time.time()
+        # # d['front_undi'],d['back_undi'],d['left_undi'],d['right_undi'] = d['new_front_undi'],d['new_back_undi'],d['new_left_undi'],d['new_right_undi']
+        # # d['front_top'],d['back_top'],d['left_top'],d['right_top'] = d['new_front_top'],d['new_back_top'],d['new_left_top'],d['new_right_top']        
+            
+        d['is_first'] = False
+        end_time = time.time()
+        print(f'copy : {end_time-start_time:.5f}') 
+
+        join_start_time = time.time()
+        # for process in processes:
+        #     process.join()
+
+
+        front_read_top_process.join()
+
+        back_read_top_process.join()
+
+        left_read_top_process.join()
+
+        right_read_top_process.join()                        
     
-    surround = cv2.resize(surround,(445,500)) 
+        make_bev_process.join() 
 
-    # 5. 화면 설정
-    if mode == 'front':
-        view = undistorted_front[0+40:720-60,0+100:1280-100]   #620,1080
-
-    elif mode == 'back':
-        view = undistorted_back[0+40:720-60,0+100:1280-100]   #620,1080
-
-    elif mode == 'left':
-        view = undistorted_left[0+40:720-60,0+80:1280-80]   #620,1080
-
-    elif mode == 'right':
-        view = undistorted_right[0+40:720-60,0+120:1280-120]   #620,1080
-
-    view = cv2.resize(view,(870,500)) 
-    in_screen = cv2.hconcat([view, surround]) 
-
-    screen[190:190+in_screen.shape[0], 50:50+in_screen.shape[1]] = in_screen
-    
-     
-    cv2.putText(screen, mode.upper(), (60, 225), font, 1,(0,255,255), 2, cv2.LINE_AA)
-    cv2.imshow('screen', screen)
-
-    key = cv2.waitKey(1)
-
-    if key == ord('q'):
-        mode = 'front'
-    elif key == ord('w'):
-        mode = 'back'
-    elif key == ord('e'):
-        mode = 'left'
-    elif key == ord('r'):
-        mode = 'right'
-
-    elif key == ord('c'):
-        cv2.destroyAllWindows()
+        
+        join_end_time = time.time()
 
 
 
-    total_frames = total_frames + 1
-    term = curr_time - prev_time
-    fps = 1 / term
-
-    prev_time = curr_time
-    fps_string = f'term = {term:.3f},  FPS = {fps:.2f}'
-    print(fps_string)
+        print(f'join : {join_end_time-join_start_time:.5f}')
 
 
-   
-    
+  
+
+
+                
+        
+        # d['is_first'] = False
+        all_end_time = time.time()        
+        print(f'all : {1/(all_end_time-all_start_time)} / {all_end_time-all_start_time:.5f}')
+        # print(f'all-join : {1/(all_end_time-all_start_time-(join_end_time-join_start_time))} / {all_end_time-all_start_time-(join_end_time-join_start_time):.5f}')
+
+
+
+

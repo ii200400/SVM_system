@@ -38,8 +38,8 @@ def undistort(img, ratio):
     return undistorted_img
 
 
-cap1 = cv2.VideoCapture(1)
-cap2 = cv2.VideoCapture(0)
+cap1 = cv2.VideoCapture(0)
+cap2 = cv2.VideoCapture(2)
 cap3 = cv2.VideoCapture(3)
 cap4 = cv2.VideoCapture(4)
 
@@ -136,7 +136,7 @@ while(True):
         cv2.imwrite('frame1_square_' + str(num) + '.png', frame1)
         cv2.imwrite('frame2_square_' + str(num) + '.png', frame2)
         cv2.imwrite('frame3_square_' + str(num) + '.png', frame3)
-        cv2.imwrite('frame4_square_' + str(num) + '.png', framezzzzzzzzzzzzzzzzzzzzzzzzzzzz4)
+        cv2.imwrite('frame4_square_' + str(num) + '.png', frame4)
 
 
         num += 1

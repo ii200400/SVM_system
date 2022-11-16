@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import argparse
-import time
 
 parser = argparse.ArgumentParser(description="Generate Surrounding Camera Bird Eye View")
 parser.add_argument('-fw', '--FRAME_WIDTH', default=1280, type=int, help='Camera Frame Width')      # 원본 이미지 길이
@@ -249,7 +248,6 @@ class BlendMask:
             mr = self.get_blend_mask(mr, mb, self.lineRB, self.lineBR)
             self.mask = mr
         self.weight = np.repeat(self.mask[:, :, np.newaxis], 3, axis=2) / 255.0
-        
         self.weight = self.weight.astype(np.float32)
         
     def get_points(self, name):  # Bird Eye View를 위한 point 값 (변환 좌표)
@@ -370,129 +368,86 @@ right_homography = np.array([[-0.08221005850690113, 1.6235034060147169, 2032.459
 left_homography = np.array([[0.1022385737675907, 5.770995782571725, -1228.0525962849354], [-3.1690352115113147, 3.516499167979982, 2659.2521230613215], [0.0002888891947907289, 0.006800266459274919, 1.0]])
 
 
-
-# 1. 4 방향 이미지 read
-cap1 = cv2.VideoCapture(0)
-cap2 = cv2.VideoCapture(0)
-cap3 = cv2.VideoCapture(0)
-cap4 = cv2.VideoCapture(0)
-
-cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-cap2.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap3.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-cap3.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap4.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-cap4.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-
-
 args = BevGenerator.get_args()            
 args.CAR_WIDTH = 155
-args.CAR_HEIGHT = 315             
+args.CAR_HEIGHT = 315              
 bev = BevGenerator(blend=True, balance=True)
 
-mode = 'front'
-
-screen = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/screen.jpg')
-screen = cv2.resize(screen,(int(1536),int(860)))
-font = cv2.FONT_HERSHEY_DUPLEX 
-car = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/2d/data/porche2.png')
-car = cv2.resize(car,(320,450))
-car = padding(car, BEV_WIDTH, BEV_HEIGHT)
-cv2.namedWindow('screen', cv2.WND_PROP_FULLSCREEN)
-cv2.setWindowProperty('screen', cv2.WND_PROP_FULLSCREEN,
-                          cv2.WINDOW_FULLSCREEN)
-
-
-
-prev_time = 0
-total_frames = 0
-start_time = time.time()
-
-while(True):
-
-    curr_time = time.time()
-
-    ret1, frame1 = cap1.read()    # Read 결과와 frame
-    ret2, frame2 = cap1.read()
-    ret3, frame3 = cap1.read()
-    ret4, frame4 = cap1.read()
-
-
-
+# 1. 프레임
+frame1 = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/2d\data/extrinsic/front.png')    # Read 결과와 frame
+frame2 = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/2d\data/extrinsic/back.png')
+frame3 = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/2d\data/extrinsic/right.png')
+frame4 = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/2d\data/extrinsic/left.png')
 
 # 2. 왜곡 보정
-    # 왼쪽 프레임 번호는 직접 찾아서 입력해줘야한다.
-    undistorted_front = undistort(frame1, 1.5)         
-    undistorted_back = undistort(frame2, 1.5)        
-    undistorted_right = undistort(frame3, 1.5)        
-    undistorted_left = undistort_left(frame4, 1.5) 
+# 왼쪽 프레임 번호는 직접 찾아서 입력해줘야한다.
+undistorted_front = undistort(frame1, 1.5)         
+undistorted_back = undistort(frame3, 1.5)        
+undistorted_right = undistort(frame4, 1.5)        
+undistorted_left = undistort_left(frame2, 1.5) 
 
-    # val = 70
-    # array = np.full(undistorted_left.shape, (val,val,val), dtype=np.uint8)
-    # undistorted_left = cv2.add(undistorted_left, array)
+
 
 # 3. 탑뷰 전환 (호모그래피)
 
-    top_front = cv2.warpPerspective(undistorted_front, front_homography, (1020, 1128)) 
-    top_back = cv2.warpPerspective(undistorted_back, back_homography, (1020, 1128)) 
-    top_right = cv2.warpPerspective(undistorted_right, right_homography, (1020, 1128)) 
-    top_left = cv2.warpPerspective(undistorted_left, left_homography, (1020, 1128)) 
-    
-    # cv2.imshow('car', car)
+top_front = cv2.warpPerspective(undistorted_front, front_homography, (1020, 1128)) 
+top_back = cv2.warpPerspective(undistorted_back, back_homography, (1020, 1128)) 
+top_right = cv2.warpPerspective(undistorted_right, right_homography, (1020, 1128)) 
+top_left = cv2.warpPerspective(undistorted_left, left_homography, (1020, 1128)) 
+
+car = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/2d/data/porche2.png')
+car = cv2.resize(car,(320,450))
+car = padding(car, BEV_WIDTH, BEV_HEIGHT)
+
 
 # 4. 이미지 합성
-    surround = bev(top_front, top_back, top_left, top_right, car)         
-    
-    surround = cv2.resize(surround,(445,500)) 
+surround = bev(top_front, top_back, top_left, top_right, car)         
+# cv2.namedWindow('surround', flags=cv2.WINDOW_FULLSCREEN | cv2.WINDOW_KEEPRATIO)
+# surround = cv2.resize(surround,(670,752)) 
+surround = cv2.resize(surround,(445,500)) 
 
-    # 5. 화면 설정
-    if mode == 'front':
-        view = undistorted_front[0+40:720-60,0+100:1280-100]   #620,1080
+# x: 62  y: 200
+# x: 1354  y: 680
 
-    elif mode == 'back':
-        view = undistorted_back[0+40:720-60,0+100:1280-100]   #620,1080
+mode = 'left'
+# 5. 화면 설정
+if mode == 'front':
+    view = undistorted_front[0+40:720-60,0+100:1280-100]   #620,1080
 
-    elif mode == 'left':
-        view = undistorted_left[0+40:720-60,0+80:1280-80]   #620,1080
+elif mode == 'back':
+    view = undistorted_back[0+40:720-60,0+100:1280-100]   #620,1080
 
-    elif mode == 'right':
-        view = undistorted_right[0+40:720-60,0+120:1280-120]   #620,1080
+elif mode == 'left':
+    view = undistorted_left[0+40:720-60,0+80:1280-80]   #620,1080
 
-    view = cv2.resize(view,(870,500)) 
-    in_screen = cv2.hconcat([view, surround]) 
+elif mode == 'right':
+    view = undistorted_right[0+40:720-60,0+120:1280-120]   #620,1080
 
-    screen[190:190+in_screen.shape[0], 50:50+in_screen.shape[1]] = in_screen
-    
-     
-    cv2.putText(screen, mode.upper(), (60, 225), font, 1,(0,255,255), 2, cv2.LINE_AA)
-    cv2.imshow('screen', screen)
-
-    key = cv2.waitKey(1)
-
-    if key == ord('q'):
-        mode = 'front'
-    elif key == ord('w'):
-        mode = 'back'
-    elif key == ord('e'):
-        mode = 'left'
-    elif key == ord('r'):
-        mode = 'right'
-
-    elif key == ord('c'):
-        cv2.destroyAllWindows()
+view = cv2.resize(view,(870,500))
+in_screen = cv2.hconcat([view, surround]) # axis = 0 과 결과 동일
 
 
+screen = cv2.imread('C:/Users/multicampus/Desktop/S07P31D108/screen.jpg')
+screen = cv2.resize(screen,(int(1536),int(860)))
+screen[190:190+in_screen.shape[0], 50:50+in_screen.shape[1]] = in_screen
 
-    total_frames = total_frames + 1
-    term = curr_time - prev_time
-    fps = 1 / term
-
-    prev_time = curr_time
-    fps_string = f'term = {term:.3f},  FPS = {fps:.2f}'
-    print(fps_string)
+font = cv2.FONT_HERSHEY_DUPLEX  
+cv2.putText(screen, mode.upper(), (60, 225), font, 1,(0,255,255), 2, cv2.LINE_AA)
+# cv2.putText(screen, mode.upper(), (55, 220), font, 1,(0,0,155), 2, cv2.LINE_AA)
 
 
-   
-    
+# x= 100:1323  
+# y= 200:663
+
+# 이미지를 자른다.
+# view = src[40:660, 200:1080].copy()
+# view = cv2.resize(dst,(int(880*0.8),int(620*0.8))) # 864, 496
+
+
+
+# cv2.imshow('img_con', in_screen)
+# cv2.imshow('view', view)
+cv2.imshow('screen', screen)
+# cv2.imshow('surround', surround)
+cv2.waitKey(0)
+

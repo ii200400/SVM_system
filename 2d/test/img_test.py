@@ -25,3 +25,5 @@ cv2.destroyAllWindows()
 
 # src = src[70:640-130, 120:1440-120].copy()
 # src = cv2.resize(src, (int(1200*1.5), int(440*1.5)))
+# x: 62  y: 200
+# x: 1354  y: 680
