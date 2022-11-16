@@ -904,9 +904,9 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	if (mode == 0){
 		degree = 315;
 	}else if (mode == 1) {
-		degree = 45 + 4;
+		degree = 45 + 5;
 	}else if (mode == 2) {
-		degree = 225 - 4;
+		degree = 225 - 5;
 	}else{
 		degree = 135;
 	}
@@ -936,9 +936,9 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	// 좌측이미지는 가로 0 ~ bottom_center, 세로 left_center ~  bowlImg.col,
 	// 후측이미지는 가로 bottom_center ~ bowlImg.col, 세로 right_center ~  bowlImg.col 을 차지한다.
 	int left_center = bowlImg.rows * 0.5;
-	int right_center = bowlImg.rows * 0.48;
+	int right_center = bowlImg.rows * 0.52;
 	int top_center = bowlImg.cols * 0.5;
-	int bottom_center = bowlImg.cols * 0.48;
+	int bottom_center = bowlImg.cols * 0.52;
 
 	// 왜곡을 만든 Image 를 다시 Mat으로 변환
 	Mat temp = Mat(img.rows(), img.columns(), CV_8UC3, Scalar(255, 255, 255));
@@ -965,8 +965,8 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	}
 	else if (mode == 1) {
 		//imshow("right", temp);
-		int img_x_move = 90;
-		int img_y_move = 260;
+		int img_x_move = 81;
+		int img_y_move = 285;
 		float resize = 1;
 
 		int height = right_center;
@@ -983,8 +983,8 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	}
 	else if (mode == 2) {
 		//imshow("left", temp);
-		int img_x_move = 264;
-		int img_y_move = 90;
+		int img_x_move = 288;
+		int img_y_move = 53;
 		float resize = 1;
 
 		int height = bowlImg.rows - left_center;
@@ -1001,8 +1001,8 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	}
 	else {
 		//imshow("back", temp);
-		int img_x_move = 100;
-		int img_y_move = 100;
+		int img_x_move = 225;
+		int img_y_move = 215;
 		float resize = 0.84;
 
 		int height = bowlImg.rows - right_center;
