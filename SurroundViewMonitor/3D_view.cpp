@@ -735,12 +735,12 @@ int main(void)
 		
 		// bowl view
 		
-		if (cv::waitKey(10) == 13) {
+		if (true) {	// cv::waitKey(10) == 13
 			endtime = clock();
 			cout << "start : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
 			// o x x o
-			cv::Mat img_list[4] = { undistort_front, undistort_right, undistort_left, undistort_back };
+			cv::Mat img_list[4] = { undistort_back, undistort_left, undistort_right, undistort_front };
 
 			for (int i = 0; i < 4; i++) {
 				bowl_t[i] = thread(getBowlImg, std::ref(img_list[i]), i);
@@ -1040,7 +1040,10 @@ void getBowlImg(Mat &cameraImg, int mode) {
 		// 이미지 크기
 		//w = img.columns(), h = img.rows();
 		// zero함수를 사용하면 Scalar(0)으로 고정되어 3차원 배열이 불가능하다.
-		bowlImg = Mat(img.columns() * 1.30, img.rows() * 1.30, CV_8UC3, Scalar(0, 0, 0));
+		//bowlImg = Mat(img.columns() * 1.30, img.rows() * 1.30, CV_8UC3, Scalar(0, 0, 0));
+		
+		// thread로 인하여 몇 번째 img로 초기화 될지 몰라, img1 기준의 가로, 세로 고정 비로 고정
+		bowlImg = Mat(1176 * 1.30, 1176 * 1.30, CV_8UC3, Scalar(0, 0, 0));
 		bowlInit = true;
 	}
 
@@ -1065,7 +1068,8 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	//cout << "image to mat : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
 	if (mode == 0) {
-		imshow("front", temp);
+		cout << "height : " << img.rows() << ", width : " << img.columns() << endl;
+		//imshow("front", temp);
 		int img_x_move = 70;
 		int img_y_move = 70;
 		float resize = 1;
@@ -1079,8 +1083,8 @@ void getBowlImg(Mat &cameraImg, int mode) {
 		
 		resized.copyTo(imageROI, gray);
 	}
-	/*else if (mode == 1) {
-		imshow("right", temp);
+	else if (mode == 1) {
+		//imshow("right", temp);
 		int img_x_move = 81;
 		int img_y_move = 285;
 		float resize = 1;
@@ -1096,7 +1100,7 @@ void getBowlImg(Mat &cameraImg, int mode) {
 		cv::cvtColor(resized, gray, cv::COLOR_BGR2GRAY);
 
 		resized.copyTo(imageROI, gray);
-	}*/
+	}
 	else if (mode == 2) {
 		//imshow("left", temp);
 		int img_x_move = 288;
