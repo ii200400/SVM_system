@@ -4,6 +4,7 @@
 //#include <stdlib.h>
 #include <vector>
 //#include <cmath>
+#include <thread>
 #include <time.h>
 
 // Include GLEWc
@@ -35,6 +36,7 @@ using namespace glm;
 
 using namespace cv;
 using namespace std;
+using std::thread;
 
 // wand
 //#include <MagickWand/MagickWand.h>
@@ -621,6 +623,8 @@ int main(void)
 	mapInit(mapX, mapY);
 
 	cv::Mat img0, img1, img2, img3, img4;
+	
+	thread bowl_t[4];
 	cv::Mat undistort_front, undistort_back, undistort_left, undistort_right;
 	cv::Mat top_front, top_back, top_left, top_right;
 
@@ -631,11 +635,13 @@ int main(void)
 	img2 = imread("back.png");
 	img3 = imread("left.png");
 	img4 = imread("right.png");
+	cv::Mat img_list[4] = { img2, img3, img4, img1 };
 
-	getBowlImg(img1, 3);
-	getBowlImg(img2, 0);
-	getBowlImg(img3, 1);
-	getBowlImg(img4, 2);
+	imshow("temp", img1);
+	//getBowlImg(img_list[0], 3);
+	//getBowlImg(img_list[1], 0);
+	//getBowlImg(img_list[2], 1);
+	//getBowlImg(img_list[3], 2);
 
 	do {
 		// Clear the screen
@@ -690,24 +696,28 @@ int main(void)
 		*/
 		// 3-1. bowl View 전환
 		
-		//endtime = clock();
-		//cout << "start : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+		//cout << waitKey(0) << endl;
 		
-		//getBowlImg(img1, 0);
-		//endtime = clock();
-		//cout << "img1 : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
-		//getBowlImg(img2, 3);
-		//endtime = clock();
-		//cout << "img2 : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
-		//getBowlImg(img3, 2);
-		//endtime = clock();
-		//cout << "img3 : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
-		//getBowlImg(img4, 1);
-		//endtime = clock();
-		//cout << "img4 : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+		if (cv::waitKey(10) == 13) {
+			endtime = clock();
+			cout << "start : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+
+			for (int i = 0; i < 4; i++) {
+				bowl_t[i] = thread(getBowlImg, std::ref(img_list[i]), i);
+			}
+			for (int i = 0; i < 4; i++) {
+				bowl_t[i].join();
+			}
+
+			endtime = clock();
+			cout << "end : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+		}
 
 		//imwrite("bowlImg.jpg", bowlImg);
+		//std::thread t((&viewWindow::refreshWindow, render, playerRect, backTexture, playerTexture));
 
+		//std::thread t(&viewWindow::refreshWindow, window, render, std::ref(playerRect), backTexture, playerTexture);
+		//std::thread t([&](viewWindow* view) { view->refreshWindow(render, playerRect, backTexture, playerTexture); }, &window);
 		/*
 		// 4. 차량 (Mat car)
 
@@ -889,14 +899,14 @@ Mat* luminance_balance(Mat* images) {
 }
 
 void getBowlImg(Mat &cameraImg, int mode) {
-	//endtime = clock();
-	//cout << "getBowlImg start : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+	endtime = clock();
+	cout << "getBowlImg start : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
 	double degree;	// 이미지를 회전시킬 정도 
 	// Mat 이미지 Image로 변환
 	Magick::Image img(cameraImg.cols, cameraImg.rows, "BGR", Magick::CharPixel, (char *)cameraImg.data);
-	//endtime = clock();
-	//cout << "mat to image transform : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+	endtime = clock();
+	cout << "mat to image transform : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
 	// 파이썬의 "arc" 그냥 왜곡을 하는 방법 중 하나
 	MagickCore::DistortMethod method = Magick::ArcDistortion;
@@ -915,8 +925,8 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	double listOfArguments[2] = { 90, degree };
 	img.distort(method, 2, listOfArguments);
 
-	//endtime = clock();
-	//cout << "distort : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+	endtime = clock();
+	cout << "distort : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
 	// bowlImg 초기화
 	if (!bowlInit) {
