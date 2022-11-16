@@ -632,11 +632,10 @@ int main(void)
 	img3 = imread("left.png");
 	img4 = imread("right.png");
 
-	getBowlImg(img1, 0);
-	
-	getBowlImg(img3, 2);
-	getBowlImg(img4, 1);
-	getBowlImg(img2, 3);
+	getBowlImg(img1, 3);
+	getBowlImg(img2, 0);
+	getBowlImg(img3, 1);
+	getBowlImg(img4, 2);
 
 	do {
 		// Clear the screen
@@ -937,9 +936,9 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	// 좌측이미지는 가로 0 ~ bottom_center, 세로 left_center ~  bowlImg.col,
 	// 후측이미지는 가로 bottom_center ~ bowlImg.col, 세로 right_center ~  bowlImg.col 을 차지한다.
 	int left_center = bowlImg.rows * 0.5;
-	int right_center = bowlImg.rows * 0.52;
+	int right_center = bowlImg.rows * 0.48;
 	int top_center = bowlImg.cols * 0.5;
-	int bottom_center = bowlImg.cols * 0.52;
+	int bottom_center = bowlImg.cols * 0.48;
 
 	// 왜곡을 만든 Image 를 다시 Mat으로 변환
 	Mat temp = Mat(img.rows(), img.columns(), CV_8UC3, Scalar(255, 255, 255));
@@ -950,9 +949,9 @@ void getBowlImg(Mat &cameraImg, int mode) {
 
 	if (mode == 0) {
 		//imshow("front", temp);
-		int img_x_move = 0;
-		int img_y_move = 25;
-		float resize = 0.9;
+		int img_x_move = 70;
+		int img_y_move = 70;
+		float resize = 1;
 
 		//imshow("front", temp);
 		Mat imageROI = bowlImg(Rect(0, 0, top_center, left_center));
@@ -966,8 +965,8 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	}
 	else if (mode == 1) {
 		//imshow("right", temp);
-		int img_x_move = 82;
-		int img_y_move = 358;
+		int img_x_move = 90;
+		int img_y_move = 260;
 		float resize = 1;
 
 		int height = right_center;
@@ -984,8 +983,8 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	}
 	else if (mode == 2) {
 		//imshow("left", temp);
-		int img_x_move = 330;
-		int img_y_move = 75;
+		int img_x_move = 264;
+		int img_y_move = 90;
 		float resize = 1;
 
 		int height = bowlImg.rows - left_center;
@@ -1002,9 +1001,9 @@ void getBowlImg(Mat &cameraImg, int mode) {
 	}
 	else {
 		//imshow("back", temp);
-		int img_x_move = 350;
-		int img_y_move = 350;
-		float resize = 1.03;
+		int img_x_move = 100;
+		int img_y_move = 100;
+		float resize = 0.84;
 
 		int height = bowlImg.rows - right_center;
 		int width = bowlImg.cols - bottom_center;
