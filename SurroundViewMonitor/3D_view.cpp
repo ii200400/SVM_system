@@ -699,47 +699,48 @@ int main(void)
 		glUniform1i(TextureID, 0);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-		start = clock();
-		for (int i = 0; i < 4; i++)
-			t[i].join();
-
-		//cout << "1 : "<<workers.size() << endl;
-		for (int i = 0; i < 4; i++)
-			t2[i] = thread(remap_warp, i);
-		//cout << "2 : " << workers.size() << endl;
-		for (int i = 0; i < 4; i++)
-			t2[i].join();
-		for (int i = 0; i < 4; i++)
-			t[i] = thread(read_frame, i);
-		//cout << "3 : " << workers.size() << endl;
-		//end1 = clock();
-		// 5. 5개 합성
-		t1.join();
-		t1 = thread(read_surround);
-
-		cv::imshow("surround1212", surround1);
-		/*cv::imwrite("surround22.jpg", surround);
-
-		// 테스트용 (원하는 data를 2번째 인자에 입력하세요)
-		/*cv::imshow("1", undistort_front);
-		cv::imshow("2", undistort_back);
-		cv::imshow("3", undistort_left);
-		cv::imshow("4", undistort_back);*/
-
-		//cout << "time1 : "<<(double)(end1 - start) << endl;
-		//cout << "time2 : " << (double)(end2 - end1) << endl;
-		end2 = clock();
-		cout << "time2 : " << (double)(end2 - start) << endl;
-		cv::waitKey(1);
 		
 		// bowl view
 		
-		if (true) {	// cv::waitKey(10) == 13
-			endtime = clock();
-			cout << "start : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+		if (cv::waitKey(10) == 13) {	// cv::waitKey(10) == 13
+			start = clock();
+			for (int i = 0; i < 4; i++)
+				t[i].join();
 
-			// o x x o
+			//cout << "1 : "<<workers.size() << endl;
+			for (int i = 0; i < 4; i++)
+				t2[i] = thread(remap_warp, i);
+			//cout << "2 : " << workers.size() << endl;
+			for (int i = 0; i < 4; i++)
+				t2[i].join();
+			for (int i = 0; i < 4; i++)
+				t[i] = thread(read_frame, i);
+			//cout << "3 : " << workers.size() << endl;
+			//end1 = clock();
+			// 5. 5개 합성
+			t1.join();
+			t1 = thread(read_surround);
+
+			cv::imshow("surround1212", surround1);
+			/*cv::imwrite("surround22.jpg", surround);
+
+			// 테스트용 (원하는 data를 2번째 인자에 입력하세요)
+			/*cv::imshow("1", undistort_front);
+			cv::imshow("2", undistort_back);
+			cv::imshow("3", undistort_left);
+			cv::imshow("4", undistort_back);*/
+
+			//cout << "time1 : "<<(double)(end1 - start) << endl;
+			//cout << "time2 : " << (double)(end2 - end1) << endl;
+
+
+			//end2 = clock();
+			//cout << "time2 : " << (double)(end2 - start) << endl;
+			//cv::waitKey(1);
+
+			//endtime = clock();
+			//cout << "start : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
+
 			cv::Mat img_list[4] = { undistort_back, undistort_left, undistort_right, undistort_front };
 
 			for (int i = 0; i < 4; i++) {
@@ -847,16 +848,20 @@ void read_surround() {
 void read_frame(int index) {
 	switch (index) {
 	case 0:
-		cap_2 >> img1;
+		//cap_2 >> img1;
+		img1 = imread("front2.png");
 		break;
 	case 1:
-		cap_4 >> img2;
+		//cap_4 >> img2;
+		img2 = imread("back2.png");
 		break;
 	case 2:
-		cap_1 >> img3;
+		//cap_1 >> img3;
+		img3 = imread("left2.png");
 		break;
 	case 3:
-		cap_3 >> img4;
+		//cap_3 >> img4;
+		img4 = imread("right2.png");
 		break;
 
 	}
