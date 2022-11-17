@@ -1,4 +1,0 @@
-﻿  controls.cpp
-c:\users\multicampus\desktop\lastproject\project2\surroundviewmonitor\include\common\controls.cpp(92): warning C4305: '=': 'double'에서 'float'(으)로 잘립니다.
-c:\users\multicampus\desktop\lastproject\project2\surroundviewmonitor\include\common\controls.cpp(95): warning C4305: '=': 'double'에서 'float'(으)로 잘립니다.
-  SurroundViewMonitor.vcxproj -> C:\Users\multicampus\Desktop\lastProject\project2\SurroundViewMonitor\x64\Debug\SurroundViewMonitor.exe
