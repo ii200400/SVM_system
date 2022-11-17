@@ -701,7 +701,7 @@ int main(void)
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		
 		// bowl view
-		
+		imshow("getkey", img1);
 		if (cv::waitKey(10) == 13) {	// cv::waitKey(10) == 13
 			start = clock();
 			for (int i = 0; i < 4; i++)
@@ -754,8 +754,8 @@ int main(void)
 			cout << "end : " << double(endtime - start) / CLOCKS_PER_SEC << endl;
 
 			Mat bowlTemp;
-	cv::resize(bowlImg, bowlTemp, cv::Size(1000, 1000));
-	imshow("bowlImg", bowlTemp);
+			cv::resize(bowlImg, bowlTemp, cv::Size(1000, 1000));
+			imshow("bowlImg", bowlTemp);
 		}
 
 
