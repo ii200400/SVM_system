@@ -2,10 +2,10 @@ import cv2
 # import datetime
 import time
 
-cap1 = cv2.VideoCapture(0)
-cap2 = cv2.VideoCapture(1)
-cap3 = cv2.VideoCapture(2)
-cap4 = cv2.VideoCapture(3)
+cap1 = cv2.VideoCapture(0)  # 전방 카메라
+cap2 = cv2.VideoCapture(1)  # 좌측 카메라
+cap3 = cv2.VideoCapture(2)  # 우측 카메라
+cap4 = cv2.VideoCapture(3)  # 후방 카메라
 
 # cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 # cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 480)
@@ -38,7 +38,7 @@ while(True):
     if(ret1) :
         # gray = cv2.cvtColor(frame1,  cv2.COLOR_BGR2GRAY)    # 입력 받은 화면 Gray로 변환
 
-        cv2.imshow('cap1', frame1)    # 컬러 화면 출력
+        cv2.imshow('cap1_front', frame1)    # 컬러 화면 출력
         
         # print("1: " + str(datetime.datetime.now()))
         # cv2.imshow('frame_gray', gray)    # Gray 화면 출력
@@ -46,19 +46,19 @@ while(True):
     if(ret2) :
         # gray = cv2.cvtColor(frame2,  cv2.COLOR_BGR2GRAY)    # 입력 받은 화면 Gray로 변환
 
-        cv2.imshow('cap2', frame2)    # 컬러 화면 출력
+        cv2.imshow('cap2_left', frame2)    # 컬러 화면 출력
         # print("2: " + str(datetime.datetime.now()))
 
     if(ret3) :
         # gray = cv2.cvtColor(frame3,  cv2.COLOR_BGR2GRAY)    # 입력 받은 화면 Gray로 변환
 
-        cv2.imshow('cap3', frame3)    # 컬러 화면 출력
+        cv2.imshow('cap3_right', frame3)    # 컬러 화면 출력
         # print("3: " + str(datetime.datetime.now()))
 
     if(ret4) :
         # gray = cv2.cvtColor(frame4,  cv2.COLOR_BGR2GRAY)    # 입력 받은 화면 Gray로 변환
 
-        cv2.imshow('cap4', frame4)    # 컬러 화면 출력
+        cv2.imshow('cap4_back', frame4)    # 컬러 화면 출력
         
         # print("4: " + str(datetime.datetime.now()))
 

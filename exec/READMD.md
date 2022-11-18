@@ -31,7 +31,7 @@
 - 카메라 homography 적용 및 이미지 합성
 - TopView를 통한 2D SVM 제작
 
-### 환경 및 라이브러리
+### 개발환경
 
 - OS : Windows 10 Pro
 - Language : Python(3.8.13)
@@ -130,7 +130,7 @@ ret3, frame = cap4.read()
 
 <img src="https://user-images.githubusercontent.com/19484971/202616735-6f23192e-6178-40eb-91fc-a91374316e08.png" width=300>
 
-개발 과정의 이미지들
+#### 개발 과정의 이미지들
 
 <img src="https://user-images.githubusercontent.com/19484971/202380608-13c4bd98-325a-44a8-ae4c-6e7c90f9c4c4.png" width=300>
 
