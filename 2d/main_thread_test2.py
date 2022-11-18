@@ -466,7 +466,7 @@ def birdeye(bb,d):
         curr_time = time.time()
 
         if False not in [d['front_frame_check'], d['back_frame_check'], d['left_frame_check'], d['right_frame_check']]:       
-            d['surround'] = cv2.resize(bev(d['front_top'],d['back_top'],d['left_top'],d['right_top'], car) ,(445,500) )         
+            d['surround'] = cv2.resize(bev(d['front_top'],d['back_top'],d['left_top'],d['right_top'], car) ,(452,500) )         
             # d['surround_check'] = True
 
             if d['mode'] == 'front':
@@ -612,7 +612,6 @@ if __name__ == '__main__':
     d['right_frame_check'] = False
 
     d['top_check'] = False
-
     d['surround_check'] = False
     
     front_read_top = multiprocessing.Process(target=cam_read,args=('front',d))

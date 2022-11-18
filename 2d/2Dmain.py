@@ -1,75 +1,65 @@
+from multiprocessing import Process, Manager
+
 import cv2
 import numpy as np
-import argparse
-
-parser = argparse.ArgumentParser(description="Generate Surrounding Camera Bird Eye View")
-parser.add_argument('-fw', '--FRAME_WIDTH', default=1280, type=int, help='Camera Frame Width')      # 원본 이미지 길이
-parser.add_argument('-fh', '--FRAME_HEIGHT', default=720, type=int, help='Camera Frame Height')    # 원본 이미지 높이
-parser.add_argument('-bew', '--BEV_WIDTH', default= 1020, type=int, help='BEV Frame Width')       # 탑뷰 이미지 길이
-parser.add_argument('-beh', '--BEV_HEIGHT', default= 1128, type=int, help='BEV Frame Height')     # 탑뷰 이미지 높이
-parser.add_argument('-cw', '--CAR_WIDTH', default=200, type=int, help='Car Frame Width')        # 차량 이미지 길이
-parser.add_argument('-ch', '--CAR_HEIGHT', default=400, type=int, help='Car Frame Height')      # 차량 이미지 높이
-parser.add_argument('-fs', '--FOCAL_SCALE', default=0.65, type=float, help='Camera Undistort Focal Scale')     # 카메라 왜곡되지 않은 초점 스케일
-parser.add_argument('-ss', '--SIZE_SCALE', default=1, type=float, help='Camera Undistort Size Scale')       # 카메라 왜곡되지 않은 크기 스케일
-parser.add_argument('-blend','--BLEND_FLAG', default=False, type=bool, help='Blend BEV Image (Ture/False)')
-parser.add_argument('-balance','--BALANCE_FLAG', default=False, type=bool, help='Balance BEV Image (Ture/False)')
-args = parser.parse_args()
-
-FRAME_WIDTH = args.FRAME_WIDTH
-FRAME_HEIGHT = args.FRAME_HEIGHT
-BEV_WIDTH = args.BEV_WIDTH
-BEV_HEIGHT = args.BEV_HEIGHT
-CAR_WIDTH = args.CAR_WIDTH
-CAR_HEIGHT = args.CAR_HEIGHT
-FOCAL_SCALE = args.FOCAL_SCALE
-SIZE_SCALE = args.SIZE_SCALE
+import time
 
 
-parser2 = argparse.ArgumentParser(description="Homography from Source to Destination Image")
-parser2.add_argument('-bw','--BORAD_WIDTH', default=14, type=int, help='Chess Board Width (corners number)')
-parser2.add_argument('-bh','--BORAD_HEIGHT', default=5, type=int, help='Chess Board Height (corners number)')
-parser2.add_argument('-size','--SCALED_SIZE', default=10, type=int, help='Scaled Chess Board Square Size (image pixel)')
-parser2.add_argument('-subpix_s','--SUBPIX_REGION_SRC', default=3, type=int, help='Corners Subpix Region of img_src')
-parser2.add_argument('-subpix_d','--SUBPIX_REGION_DST', default=3, type=int, help='Corners Subpix Region of img_dst')
-parser2.add_argument('-store_path', '--STORE_PATH', default='./data/', type=str, help='Path to Store Centerd/Scaled Images')
-args2 = parser2.parse_args()
+
+# 1. 초기값 세팅
+FRAME_WIDTH = 1280
+FRAME_HEIGHT = 720
+BEV_WIDTH = 340                                                
+BEV_HEIGHT = 480
+CAR_WIDTH = 70
+CAR_HEIGHT = 100
+FOCAL_SCALE = 0.65
+SIZE_SCALE = 1
 
 
+
+# 2. 왜곡 계수 및 intrinsic matrix 생성
 DIM=(1280, 720)
 LEFT_K=np.array([[486.43710381577273, 0.0, 643.0021325671074], [0.0, 485.584911786959, 402.9808925210084], [0.0, 0.0, 1.0]])
 LEFT_D=np.array([[-0.06338733272909226], [-0.007861033496168955], [0.005073683389947028], [-0.0010639404289377306]])
+K=np.array([[455.8515274977241, 0.0, 655.7621645964248], [0.0, 455.08604281075947, 367.3548823943176], [0.0, 0.0, 1.0]])
+D=np.array([[-0.02077978156022359], [-0.02434621475644252], [0.009725498728069807], [-0.0018108318059442028]])
 
 new_LEFT_K = LEFT_K.copy()
 new_LEFT_K[0,0]=LEFT_K[0,0]/1.5
 new_LEFT_K[1,1]=LEFT_K[1,1]/1.5
 left_map1, left_map2 = cv2.fisheye.initUndistortRectifyMap(LEFT_K, LEFT_D, np.eye(3), new_LEFT_K, DIM, cv2.CV_16SC2)
 
-
-DIM=(1280, 720)
-K=np.array([[455.8515274977241, 0.0, 655.7621645964248], [0.0, 455.08604281075947, 367.3548823943176], [0.0, 0.0, 1.0]])
-D=np.array([[-0.02077978156022359], [-0.02434621475644252], [0.009725498728069807], [-0.0018108318059442028]])
-
-## new_K 설정 
 new_K = K.copy()
 new_K[0,0]=K[0,0]/1.5
 new_K[1,1]=K[1,1]/1.5
-
 map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), new_K, DIM, cv2.CV_16SC2)
 
 
-def undistort_left(img, ratio):    
-    global left_map1, left_map2 
 
-    undistorted_img = cv2.remap(img, left_map1, left_map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-    return undistorted_img
+# 3. 호모그래피 초기화
+front_homography = np.array([
+        [1.8360989124158613, 2.8640085391977714, -1023.6380774519264], 
+        [0.02018215275256735, 4.6066418353869425, -680.0201740667829], 
+        [0.00010738267681692615, 0.016889137225749713, 1.0]])
 
-def undistort(img, ratio):
-    global map1, map2
-    
-    # print(map1, map2)
-    undistorted_img = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-    return undistorted_img
+back_homography = np.array([
+        [-3.139383422382424, 4.272063180766197, 2129.9452721606513], 
+        [-0.23281751948704832, 4.874074461361722, 1742.937726157902], [-0.0006460879829712756, 0.0253398527339296, 1.0]])
 
+right_homography = np.array([
+        [-0.02970281358623161, -2.3639074894503294, -801.2763307861732], 
+        [-2.143675631885619, -4.351329547741282, 1614.3804634781513], 
+        [-0.00013104833341104832, -0.019319263860471565, 0.9999999999999999]])
+
+left_homography = np.array([
+        [-0.0869111298382391, 39.96716421032833, -10495.070863859186], 
+        [-21.188930852565306, 37.59859747363522, 13570.526023232109], 
+        [-0.0014356252271927033, 0.1686220747425981, 1.0]])
+
+
+
+# 4. 차량 설치 공간 init
 def padding(img,width,height):
     H = img.shape[0]
     W = img.shape[1]
@@ -86,144 +76,37 @@ def padding(img,width,height):
                              #copyMakeBorder 함수는 이미지를 액자 형태로 만들 때 사용할 수 있습니다. 이미지에 가장자리가 추가
     return img
 
-def color_balance(image): # 색 밸런싱하는 함수
-    b, g, r = cv2.split(image)
-    B = np.mean(b)
-    G = np.mean(g)
-    R = np.mean(r)
-    K = (R + G + B) / 3
-    Kb = K / B
-    Kg = K / G
-    Kr = K / R
-    cv2.addWeighted(b, Kb, 0, 0, 0, b)
-    cv2.addWeighted(g, Kg, 0, 0, 0, g)
-    cv2.addWeighted(r, Kr, 0, 0, 0, r)
-    return cv2.merge([b,g,r])
 
-def luminance_balance(images): # 이미지의 HSV를 통일해주는 함수
-    [front,back,left,right] = [cv2.cvtColor(image,cv2.COLOR_BGR2HSV)  
-                               for image in images]
-                               # -> RGB 색상 이미지를 H(Hue, 색조), S(Saturation, 채도), V(Value, 명도) HSV 이미지로 변형
-    hf, sf, vf = cv2.split(front)   # 멀티 채널 Matrix를 여러 개의 싱글 채널 Matrix로 바꿔준다.
-    hb, sb, vb = cv2.split(back)    # H,S,V 각각으로 분해된 값이다.
-    hl, sl, vl = cv2.split(left)
-    hr, sr, vr = cv2.split(right)
-    V_f = np.mean(vf) # 주어진 배열의 산술 평균을 반환
-    V_b = np.mean(vb)
-    V_l = np.mean(vl)
-    V_r = np.mean(vr)
-    V_mean = (V_f + V_b + V_l +V_r) / 4
-    vf = cv2.add(vf,(V_mean - V_f)) # V_mean - V_f = 전체 명도 평균 - FRONT 명도 평균 의 값과 front의 명도를 더함
-    vb = cv2.add(vb,(V_mean - V_b)) # 이렇게 더해서 모든 bird Eye View 이미지의 명도 값을 평균적으로 변환
-    vl = cv2.add(vl,(V_mean - V_l))
-    vr = cv2.add(vr,(V_mean - V_r))
-    front = cv2.merge([hf,sf,vf]) # 여러 개의 싱글 채널 Matrix를 멀티 채널 Matrix로 바꿔준다. split의 반대
-    back = cv2.merge([hb,sb,vb])
-    left = cv2.merge([hl,sl,vl])
-    right = cv2.merge([hr,sr,vr])
-    images = [front,back,left,right]
-    images = [cv2.cvtColor(image,cv2.COLOR_HSV2BGR) for image in images]
+car = cv2.imread('C:/Users/multicampus/Desktop/porche.png')
+car = cv2.resize(car,(110,150))
+car = padding(car, BEV_WIDTH, BEV_HEIGHT)
 
-    return images
 
-class BevGenerator:
-    def __init__(self, blend=args.BLEND_FLAG, balance=args.BALANCE_FLAG): #2
-        self.init_args()
-        self.blend = blend # Bird Eye View 이미지 혼합상태 판단 boolean
-        self.balance = balance # Bird Eye View 이미지 균형상태 판단 boolean
-        if not self.blend:
-            self.masks = [Mask('front'), Mask('back'),  # 10-1
-                          Mask('left'), Mask('right')]
-        else:
-            print("1111")
-            self.masks = [BlendMask('front'), BlendMask('back'), #10-2
-                      BlendMask('left'), BlendMask('right')]
 
-    @staticmethod
-    def get_args():
-        return args
+# 5. 카메라 객체 생성 (앞,좌,우,뒤)
+cap1 = cv2.VideoCapture(0)
+cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap1.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
-    def init_args(self):
-        global FRAME_WIDTH, FRAME_HEIGHT, BEV_WIDTH, BEV_HEIGHT
-        global CAR_WIDTH, CAR_HEIGHT, FOCAL_SCALE, SIZE_SCALE
-        FRAME_WIDTH = args.FRAME_WIDTH
-        FRAME_HEIGHT = args.FRAME_HEIGHT
-        BEV_WIDTH = args.BEV_WIDTH
-        BEV_HEIGHT = args.BEV_HEIGHT
-        CAR_WIDTH = args.CAR_WIDTH
-        CAR_HEIGHT = args.CAR_HEIGHT
-        FOCAL_SCALE = args.FOCAL_SCALE
-        SIZE_SCALE = args.SIZE_SCALE
+cap2 = cv2.VideoCapture(2)
+cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap2.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap2.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
-    def __call__(self, front, back, left, right, car = None):
-        images = [front,back,left,right]
+cap3 = cv2.VideoCapture(3)
+cap3.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap3.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap3.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
-        if self.balance:
-            images = luminance_balance(images)  #14
-        images = [mask(img) #15
-                  for img, mask in zip(images, self.masks)]
-        surround = cv2.add(images[0],images[1]) #이미지를 합침
-        surround = cv2.add(surround,images[2])
-        surround = cv2.add(surround,images[3])
-        if self.balance:
-            surround = color_balance(surround) #16
-        if car is not None:
-            surround = cv2.add(surround,car)
-        return surround
+cap4 = cv2.VideoCapture(4)
+cap4.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap4.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap4.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
-class Mask:
-    def __init__(self, name):
-        self.mask = self.get_mask(name) #11-1
-        
-    def get_points(self, name): # Bird Eye View를 위한 point 값 (변환 좌표)
-        if name == 'front':
-            points = np.array([
-                [0, 0],
-                [BEV_WIDTH, 0], 
-                [(BEV_WIDTH+CAR_WIDTH)/2, (BEV_HEIGHT-CAR_HEIGHT)/2],
-                [(BEV_WIDTH-CAR_WIDTH)/2, (BEV_HEIGHT-CAR_HEIGHT)/2]
-            ]).astype(np.int32)
-        elif name == 'back':
-            points = np.array([
-                [0, BEV_HEIGHT],
-                [BEV_WIDTH, BEV_HEIGHT],
-                [(BEV_WIDTH+CAR_WIDTH)/2, (BEV_HEIGHT+CAR_HEIGHT)/2], 
-                [(BEV_WIDTH-CAR_WIDTH)/2, (BEV_HEIGHT+CAR_HEIGHT)/2]
-            ]).astype(np.int32)
-        elif name == 'left':
-            points = np.array([
-                [0, 0],
-                [0, BEV_HEIGHT], 
-                [(BEV_WIDTH-CAR_WIDTH)/2, (BEV_HEIGHT+CAR_HEIGHT)/2],
-                [(BEV_WIDTH-CAR_WIDTH)/2, (BEV_HEIGHT-CAR_HEIGHT)/2]
-            ]).astype(np.int32)
-        elif name == 'right':
-            points = np.array([
-                [BEV_WIDTH, 0],
-                [BEV_WIDTH, BEV_HEIGHT], 
-                [(BEV_WIDTH+CAR_WIDTH)/2, (BEV_HEIGHT+CAR_HEIGHT)/2], 
-                [(BEV_WIDTH+CAR_WIDTH)/2, (BEV_HEIGHT-CAR_HEIGHT)/2]
-            ]).astype(np.int32)
-        else:
-            raise Exception("name should be front/back/left/right")
-        return points
-    
-    def get_mask(self, name):
-        mask = np.zeros((BEV_HEIGHT,BEV_WIDTH), dtype=np.uint8) # 마스크 생성, Bird Eye View 높이, 너비만큼 배열 생성
-        points = self.get_points(name) # 12-1
 
-        # img = cv2.fillPoly(mask, [points], 255)
-        # cv2.namedWindow("raw_frame", flags = cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-        # cv2.imshow("raw_frame", img)
-        # cv2.waitKey(0)
 
-        return cv2.fillPoly(mask, [points], 255)
-        # cv2.fillPoly = 채워진 다각형을 그립니다. pts에 다각형 배열 값을 여러 개 입력할 수도 있습니다. 255 = color
-        # fillPoly()에 다각형 좌표 배열을 여러 개 적용한 경우 겹치는 부분이 사라집니다.
-    
-    def __call__(self, img):
-        return cv2.bitwise_and(img, img, mask=self.mask) # mask 영역에서 서로 공통으로 겹치는 부분 출력
-
+# 6. blending 마스킹
 class BlendMask:
     def __init__(self,name):
         mf = self.get_mask('front')
@@ -293,9 +176,8 @@ class BlendMask:
     
     def get_mask(self, name): 
         mask = np.zeros((BEV_HEIGHT,BEV_WIDTH), dtype=np.uint8) # 마스크 생성, Bird Eye View 높이, 너비만큼 배열 생성
-        points = self.get_points(name)  # 12-2
-        return cv2.fillPoly(mask, [points], 255)    # cv2.fillPoly = 채워진 다각형을 그립니다. pts에 다각형 배열 값을 여러 개 입력할 수도 있습니다. 255 = color
-        # fillPoly()에 다각형 좌표 배열을 여러 개 적용한 경우 겹치는 부분이 사라집니다.
+        points = self.get_points(name)
+        return cv2.fillPoly(mask, [points], 255)
     
     def get_lines(self):
         self.lineFL = np.array([
@@ -333,25 +215,13 @@ class BlendMask:
         
     def get_blend_mask(self, maskA, maskB, lineA, lineB): #maskA 값을 합성하는 함수 
         overlap = cv2.bitwise_and(maskA, maskB) # mask 영역에서 서로 공통으로 겹치는 부분 출력
-        
         indices = np.where(overlap != 0)
-        # print(indices)
-    #zip() 함수는 여러 개의 순회 가능한(iterable) 객체를 인자로 받고, 
-    # 각 객체가 담고 있는 원소를 터플의 형태로 차례로 접근할 수 있는 반복자(iterator)를 반환합니다. 
-    # 설명이 좀 어렵게 들릴 수도 있는데요. 간단한 예제를 보면 이해가 쉬우실 겁니다.
-    #>>> numbers = [1, 2, 3]
-    #>>> letters = ["A", "B", "C"]
-    #>>> for pair in zip(numbers, letters):
-    #...     print(pair)
-    #...
-    #(1, 'A')
-    #(2, 'B')
-    #(3, 'C')
+
 
         for y, x in zip(*indices):
             distA = cv2.pointPolygonTest(np.array(lineA), (x.astype(np.int16), y.astype(np.int16)), True)
             distB = cv2.pointPolygonTest(np.array(lineB), (x.astype(np.int16), y.astype(np.int16)),  True)
-            # 이미지에서 해당 Point가 Contour의 어디에 위치해 있는지 확인하는 함수이다.
+            # 이미지에서 해당 Point가 Contour의 어디에 위치해 있는지
 
             # 1. contour : Contour Points들을 인자로 받는다.
             # 2. pt : Contour에 테스트할 Point를 인자로 받는다.
@@ -362,74 +232,198 @@ class BlendMask:
     def __call__(self, img):
         return (img * self.weight).astype(np.uint8)   
 
-front_homography = np.array([[3.8290818190655296, 5.66226108412413, -1961.3463578215583], [0.04676494495778877, 7.593794538002965, -1398.2503661266026], [9.936840064368021e-05, 0.011048826673722773, 1.0]])
-back_homography = np.array([[-3.6014363756395578, 4.36751919471232, 2793.845376423345], [-0.16343764199990043, 3.070397421396325, 2357.357976286147], [-0.00020012270934899256, 0.008545448669492679, 1.0]])
-right_homography = np.array([[-0.08221005850690113, 1.6235034060147169, 2032.459375714023], [2.945881257892563, 3.582400762214573, -1439.2015581787357], [-0.00011329233289173604, 0.0068701395422870026, 0.9999999999999999]])
-left_homography = np.array([[0.1022385737675907, 5.770995782571725, -1228.0525962849354], [-3.1690352115113147, 3.516499167979982, 2659.2521230613215], [0.0002888891947907289, 0.006800266459274919, 1.0]])
+# 6-1. 마스킹 객체 생성
+mask_front = BlendMask('front')
+mask_left = BlendMask('left')
+mask_right = BlendMask('right')
+mask_back = BlendMask('back')
 
 
 
-# 1. 4 방향 이미지 read
-cap1 = cv2.VideoCapture(1)
-cap2 = cv2.VideoCapture(2)
-cap3 = cv2.VideoCapture(3)
-cap4 = cv2.VideoCapture(4)
+# 7. 멀티 프로세싱 task 1  (영상획득 + 왜곡보정 + 시점변환 + 명도조절 + 합성마스킹)
+def WORK_PROCESS(d, id):
+    while True:
+            if id == 1: # 1번(front) 화면
+                # frame = cv2.imread('C:/Users/multicampus/Desktop/front.png')
+                ret1, frame = cap1.read()
+                
+                tmp = cv2.remap(frame, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+                tmp = cv2.warpPerspective(tmp, front_homography, (340, 480))
+                
+                # luminance balancing
+                hsv = cv2.cvtColor(tmp, cv2.COLOR_BGR2HSV)
+                hf, sf, vf = cv2.split(hsv)
 
-cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-cap2.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap3.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-cap3.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap4.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-cap4.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                V_f = np.mean(vf)
+                d['V_f'] = V_f
+
+                V_mean = (d['V_f'] + d['V_b'] + d['V_l'] +d['V_r']) * .4
+                vf = cv2.add(vf,(V_mean - V_f))
+                tmp = cv2.merge([hf,sf,vf])
+
+                tmp = cv2.cvtColor(tmp, cv2.COLOR_HSV2BGR)
+
+                # masking
+                tmp = mask_front(tmp)
+                d['front'] = tmp
+                # cv2.imshow(f"{id}", tmp)     
+
+            elif id == 2: # 2번(left) 화면
+                # frame = cv2.imread('C:/Users/multicampus/Desktop/left.png')
+                ret1, frame = cap2.read()
+                tmp = cv2.remap(frame, left_map1, left_map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+                tmp = cv2.warpPerspective(tmp, left_homography, (340, 480))
+
+                # luminance balancing
+                hsv = cv2.cvtColor(tmp, cv2.COLOR_BGR2HSV)
+                hl, sl, vl = cv2.split(hsv)
+
+                V_l = np.mean(vl)
+                d['V_l'] = V_l
+
+                V_mean = (d['V_f'] + d['V_b'] + d['V_l'] +d['V_r']) * .4
+                vl = cv2.add(vl,(V_mean - V_l))
+                tmp = cv2.merge([hl,sl,vl])
+
+                tmp = cv2.cvtColor(tmp, cv2.COLOR_HSV2BGR)
+
+                # masking
+                tmp = mask_left(tmp)
+                d['left'] = tmp
+                # cv2.imshow(f"{id}", tmp)
+
+            elif id == 3: # 3번(right) 화면
+                # frame = cv2.imread('C:/Users/multicampus/Desktop/right.png')
+                ret1, frame = cap4.read()
+                tmp = cv2.remap(frame, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+                tmp = cv2.warpPerspective(tmp, right_homography, (340, 480))
+
+                # luminance balancing
+                hsv = cv2.cvtColor(tmp, cv2.COLOR_BGR2HSV)
+                hr, sr, vr = cv2.split(hsv)
+
+                V_r = np.mean(vr)
+                d['V_r'] = V_r
+
+                V_mean = (d['V_f'] + d['V_b'] + d['V_l'] +d['V_r']) * .4
+                vr = cv2.add(vr,(V_mean - V_r))
+                tmp = cv2.merge([hr,sr,vr])
+
+                tmp = cv2.cvtColor(tmp, cv2.COLOR_HSV2BGR)
+
+                # masking
+                tmp = mask_right(tmp)
+                d['right'] = tmp
+                # cv2.imshow(f"{id}", tmp)
+
+            elif id == 4: # 4번(back) 화면
+                # frame = cv2.imread('C:/Users/multicampus/Desktop/back.png')
+                ret1, frame = cap3.read()
+                tmp = cv2.remap(frame, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+                tmp = cv2.warpPerspective(tmp, back_homography, (340, 480))
+
+                # luminance balancing
+                tmp = cv2.cvtColor(tmp, cv2.COLOR_BGR2HSV)
+                hb, sb, vb = cv2.split(tmp)
+
+                V_b = np.mean(vb)
+                d['V_b'] = V_b
+                V_mean = (d['V_f'] + d['V_b'] + d['V_l'] +d['V_r']) * .4
+                vb = cv2.add(vb,(V_mean - V_b))
+                tmp = cv2.merge([hb,sb,vb])
+
+                tmp = cv2.cvtColor(tmp, cv2.COLOR_HSV2BGR)
+
+                # masking
+                tmp = mask_back(tmp)
+                d['back'] = tmp
+                # cv2.imshow(f"{id}", tmp)
+            
+            cv2.waitKey(1)
+
+    capture.release()
+    cv2.destroyAllWindows()
 
 
-args = BevGenerator.get_args()            
-args.CAR_WIDTH = 155
-args.CAR_HEIGHT = 315              
-bev = BevGenerator(blend=True, balance=True)
 
-while(True):
+# 8. 멀티 프로세싱 task 2  (합성 + 색 조절)
+def svm(d, id):
+    while True:
+        if len(d['front']) < 1 or len(d['left']) < 1 or len(d['right']) < 1 or len(d['back']) < 1:
+                print(len(d['front']), len(d['left']) , len(d['right']) , len(d['back']))
+                continue
+        else:
+            print("passssssssssssssss")
+            while True:
+                time1 = time.time()
 
-    ret1, frame1 = cap1.read()    # Read 결과와 frame
-    ret2, frame2 = cap2.read()
-    ret3, frame3 = cap3.read()
-    ret4, frame4 = cap4.read()
+                # 1) 4방향 작업물 합성
+                surround1 = cv2.add(d["front"], d["back"])
+                surround2 = cv2.add(d["left"], d["right"])
+                surround = cv2.add(surround1, surround2)
+                
+                # 2) 색 balancing
+                b, g, r = cv2.split(surround)
+                B = np.mean(b)
+                G = np.mean(g)
+                R = np.mean(r)
+                K = (R + G + B) * .3
+                Kb = K / B
+                Kg = K / G
+                Kr = K / R
+                cv2.addWeighted(b, Kb, 0, 0, 0, b)
+                cv2.addWeighted(g, Kg, 0, 0, 0, g)
+                cv2.addWeighted(r, Kr, 0, 0, 0, r)
+                surround = cv2.merge([b,g,r])
 
-# 2. 왜곡 보정
-    # 왼쪽 프레임 번호는 직접 찾아서 입력해줘야한다.
-    undistorted_front = undistort(frame1, 1.5)         
-    undistorted_back = undistort(frame3, 1.5)        
-    undistorted_right = undistort(frame2, 1.5)        
-    undistorted_left = undistort_left(frame4, 1.5) 
+                # 3) 차량 이미지 합성
+                surround = cv2.add(surround,car)
+                # surround = cv2.resize(surround,(670,752))
 
-    # val = 70
-    # array = np.full(undistorted_left.shape, (val,val,val), dtype=np.uint8)
-    # undistorted_left = cv2.add(undistorted_left, array)
+                # 4) 결과 출력
+                cv2.imshow('surround', surround)
 
-
-# 3. 탑뷰 전환 (호모그래피)
-
-    top_front = cv2.warpPerspective(undistorted_front, front_homography, (1020, 1128)) 
-    top_back = cv2.warpPerspective(undistorted_back, back_homography, (1020, 1128)) 
-    top_right = cv2.warpPerspective(undistorted_right, right_homography, (1020, 1128)) 
-    top_left = cv2.warpPerspective(undistorted_left, left_homography, (1020, 1128)) 
-
-    
-    car = cv2.imread('C:/Users/multicampus/Desktop/porche.png')
-    car = cv2.resize(car,(320,450))
-    car = padding(car, BEV_WIDTH, BEV_HEIGHT)
+                cv2.waitKey(1)
+                time2 = time.time()
+                print("SVM 실행 FPS", 1 / (time2 - time1))
 
 
-# 4. 이미지 합성
-    surround = bev(top_front, top_back, top_left, top_right, car)         
 
-    # cv2.namedWindow('surround', flags=cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-    surround = cv2.resize(surround,(670,752))
-    cv2.imshow('surround', surround)
+if __name__ == '__main__':
+    # 1) 프로세스 간 공유 메모리 설정
+    manager = Manager()
+    d = manager.dict()
 
-    if cv2.waitKey(1) == ord('c'):
-        cv2.destroyAllWindows()
+    # 2) 저장소 1 : 영상 처리 공유용
+    d['front'] = np.array([])
+    d['left'] = np.array([])
+    d['right'] = np.array([])
+    d['back'] = np.array([])
 
-    # cv2.imwrite("asdasasdda.png", surround)d
+    # 3) 저장소 2 : 명도 평균값 공유용
+    d["V_f"] = 1
+    d["V_b"] = 1
+    d["V_l"] = 1
+    d["V_r"] = 1
+
+    # 4) 프로세스 분기 설정
+    process1 = Process(target=WORK_PROCESS, args=(d, 1))
+    process2 = Process(target=WORK_PROCESS, args=(d, 2))
+    process3 = Process(target=WORK_PROCESS, args=(d, 3))
+    process4 = Process(target=WORK_PROCESS, args=(d, 4))
+    process5 = Process(target=svm, args=(d, 5))
+
+    # 5) 실행 명령
+    process1.start()
+    process2.start()
+    process3.start()
+    process4.start()
+    process5.start()
+
+    print("All processes have been started")
+
+    process1.join()
+    process2.join()
+    process3.join()
+    process4.join()
+    process5.join()
