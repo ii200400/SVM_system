@@ -2,19 +2,29 @@
 
 ## 카메라 설치
 
-[마트카트](https://yestore.kr/shop/item.php?it_id=1426567216) 전후좌우에 카메라를 설치한다.
+마트카트 전후좌우에 카메라를 설치한다.
 
-<img src="https://user-images.githubusercontent.com/19484971/202383691-cbfe1e29-a2dc-4116-a4ad-d3014939b53b.png" width=500>
+사용한 마트카트는 아래와 같고 스펙은 [이곳](https://yestore.kr/shop/item.php?it_id=1426567216)에서 확인할 수 있다.
+
+<img src="https://user-images.githubusercontent.com/19484971/202383691-cbfe1e29-a2dc-4116-a4ad-d3014939b53b.png" width=400>
+
+카메라에 대한 스펙은 [이곳](https://www.coupang.com/vp/products/6595685374?itemId=14901263581&vendorItemId=82139995937&q=%EC%96%B4%EC%95%88%EC%B9%B4%EB%A9%94%EB%9D%BC+usb&itemsCount=36&searchId=2a2f3dea45a94ec59734a168e85c6537&rank=2&isAddedCart=)에서 확인하자.
 
 카메라를 설치한 위치는 다음과 같다.
 
 --이미지 추가 요망--
 
-웹캠을 컴퓨터에 연결해준다. 즉, C타입을 포함한 USB 포트가 4개 미만이라면 해당 프로젝트는 진행할 수 없다. 단, 카메라 없이 이미지 파일로만 진행하는 것은 가능하다.
+<img src="https://user-images.githubusercontent.com/19484971/202635735-4f273fd9-e1f7-4240-89ad-04d493bb4cd8.jpg" width=300>
 
--- 웹캠을 모두 연결한 노트북 사진 추가 요망--
+<img src="https://user-images.githubusercontent.com/19484971/202635746-238b9cad-4468-44f8-bd69-b5c7dcf1641a.jpg" width=300>
 
-## 2D
+웹캠을 컴퓨터에 연결해준다. 하지만, 카메라가 없다면 이미지 파일로만 진행하는 것도 가능하다.
+
+<img src="https://user-images.githubusercontent.com/19484971/202635399-259a72b5-338f-447f-9961-e8293fb72dd4.png" width=400>
+
+-- 웹캠을 모두 연결한 더 깔끔한 노트북 사진 추가 요망--
+
+## 2D Surround View Monitor
 
 - 카메라 내부 파라미터 추출
 - 카메라 왜곡 보정
@@ -24,9 +34,10 @@
 ### 환경 및 라이브러리
 
 - OS : Windows 10 Pro
-- Language : Python(3.8.13), C++
-- Visual Studio Code (1.70.0)
-- openCV : 4.6.0
+- Language : Python(3.8.13)
+- Code Editor : Visual Studio Code (1.70.0)
+- Library
+    - openCV (4.6.0)
 
 python 3.5.3에서도 잘 작동되었다.
 
@@ -126,69 +137,3 @@ ret3, frame = cap4.read()
 <img src="https://user-images.githubusercontent.com/19484971/202380765-056145a0-20c7-43f3-a2b9-ad1e777a9359.png" width=500>
 
 <img src="https://user-images.githubusercontent.com/19484971/202380881-145c6286-b8bb-433e-b30e-2144a3e03e94.png" width=500>
-
-## 3D
-
-- Bowl 모델을 통한 3D SVM 제작
-
-### 환경 및 라이브러리
-
-- OS : Windows 10 Pro
-- Language : C++
-- Visual Studio 2017
-- openCV : 3.4.15
-- openGL
-    - glew : 2.1.0 win32
-    - glfw : 3.3.8 WIN64
-    - glm : 0.9.8.5
-    - freeglut-MSVC : 3.0.0-1.mp for MSVC
-    - glut : 3.7.6 Win32
-- Magick++ : ImageMagick-7.1.0-52-Q16-HDRI
-
-### 설치방법
-
-1. Visual Studio 다운로드
-
-[공식홈페이지](https://learn.microsoft.com/ko-kr/visualstudio/releasenotes/vs2017-relnotes-history)에서 Visual Studio installer 2017버전을 다운로드를 받는다.
-
-<img src="https://user-images.githubusercontent.com/19484971/202615663-33288eda-3ddc-4e32-a820-f9b01cde2923.png" width=500>
-
-현재 2022.11.18일 기준 최신의 2022버전은 해당 프로젝트에서 필요한 SDK나 구성요소를 설치할 수가 없어서 따로 설치를 해주어야 하고 2022버전을 사용한다고 하더라도 플렛폼 도구집합을 `v141`으로 사용해주어야 하기 때문에 2017버전으로 다운로드 해주어야 한다.
-
-2. C++에 대한 필요한 라이브러리를 다운로드
-
-어떤 라이브러리가 필수인지 확실하지는 않지만, 적어도 `C++를 사용한 데스크톱 개발`의 `Windows 8.1 SDK 및 UCRT SDK`, `x86 및 x64용 Visual C++ MFC`는 필수적이다. 
-
-`Windows 10 SDK(10.0.17134.0)`의 경우에는 다른 `Windows 10 SDK`도 작동되는 것 같으므로 하나만 설치하면 될 것이다.
-
-단, 다른 윈도우 버전에서는 확인을 못했으므로 다른 버전이라면 진행이 원활하지 않을 수도 있다. 
-
-<img src="https://user-images.githubusercontent.com/19484971/201578453-b53ba018-f2f5-4bc8-915c-286530e0cb3d.png" width=500>
-
-<img src="https://user-images.githubusercontent.com/19484971/201579769-8f1207eb-501f-4d69-b9a3-a44175ef8b46.png" width=700>
-
-<img src="https://user-images.githubusercontent.com/19484971/201579981-0a828e06-84bb-423c-ac90-7892acaed66c.png" width=400>
-
-2. 솔루션 속성 확인
-
-다른 버전의 Visual Studio로 진행해도 되는 것 같으나 플렛폼 도구집합은 꼭 `v141`로 해주어야 한다. 
-
-또한 `Debug`나 `Release`로 해주는 것은 상관이 없으나, 플렛폼은 꼭 `x64`로 설정해주어야 한다.
-
-<img src="https://user-images.githubusercontent.com/19484971/201580882-5b17af1c-1440-4045-8287-e2ae2fad060b.png" width=500>
-<img src="https://user-images.githubusercontent.com/19484971/201581201-55f24c67-1a13-4008-a937-d2bbcae1d0ab.png" width=300>
-
-3. 실행
-
-실행해서 아래와 같은 이미지를 본다면 성공한 것이다!
-
--- 실행시 이미지 추가 요망--
-
-### 에러
-
-1. `image.cpp`
-
-`image.cpp` 파일이 없다고 에러가 생길 수 있다. 이런 경우 `SurroundViewMonitor\include\Magick++`에 있는 `image.cpp`이 있는 폴더를 참조경로로 넣어주면 된다. 
-
-해당 파일은 [ImageMagick-Windows 깃헙](https://github.com/ImageMagick/ImageMagick-Windows)을 클론하고 파일 내부에 있는 `CloneRepositories.cmd`을 더블클릭하면 자동으로 설치되는 라이브러리 중 `ImageMagick-Windows-main\ImageMagick\Magick++\lib`에서 복사한 것이다.
-
