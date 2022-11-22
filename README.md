@@ -31,6 +31,28 @@
 
 - 차량 이용자
 
+## 사용 장비 및 설치
+
+- [마트카트](https://yestore.kr/shop/item.php?it_id=1426567216)
+
+<img src="https://user-images.githubusercontent.com/19484971/202383691-cbfe1e29-a2dc-4116-a4ad-d3014939b53b.png" width=400>
+
+- [카메라](https://www.coupang.com/vp/products/6595685374?itemId=14901263581&vendorItemId=82139995937&q=%EC%96%B4%EC%95%88%EC%B9%B4%EB%A9%94%EB%9D%BC+usb&itemsCount=36&searchId=2a2f3dea45a94ec59734a168e85c6537&rank=2&isAddedCart=)
+
+<img src="https://user-images.githubusercontent.com/19484971/203259896-15f01710-4c54-47ba-ab3b-9c45517a73e5.png" width=200>
+
+- 카메라 설치위치와 각도
+
+<img src="https://user-images.githubusercontent.com/19484971/203239711-6229d112-633e-446c-adbe-fd906a1ca9f8.png" width=400>
+
+<img src="https://user-images.githubusercontent.com/19484971/203261100-d28591d0-7703-438d-8c89-f2c647dc81f1.png" width=400>
+
+<img src="https://user-images.githubusercontent.com/19484971/203241175-f45d5bea-fa6b-4aa1-bba8-983ff5b42270.png" width=300>
+
+- 카메라 4대 연결
+
+<img src="https://user-images.githubusercontent.com/19484971/203247200-2268395d-ba5b-4eb9-8d6f-686f36b07608.jpg" width=400>
+
 ## 주요 기능
 
 - 화각 180°이상 카메라 이미지 보정 기능 (왜곡보정 및 이미지정렬)
