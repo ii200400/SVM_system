@@ -16,7 +16,16 @@
 1. SVM의 2D 파트에서 받은 어안렌즈의 전후좌우 왜곡보정 이미지를 가져온다.
 2. 위의 이미지들을 Bowl 모델에 맞게 왜곡을 적용시킨다.
 3. 왜곡을 다시 적용한 이미지들를 합성하여 하나의 이미지를 만든다.
-4. 합성하여 만든 이미지를 Texture로 만들어 Bowl 모델에 입힌다.
+
+<img src="https://user-images.githubusercontent.com/19484971/203186728-0587f2eb-3851-470f-be16-6784d3c54b49.png" width=300>
+
+4. 이미지를 적절하게 합성한다.
+
+<img src="https://user-images.githubusercontent.com/19484971/203186736-f68443c8-9a7d-40fe-ba98-42d52300b4bc.png" width=300>
+
+5. 합성하여 만든 이미지를 Texture로 만들어 Bowl 모델에 입힌다.
+
+<img src="https://user-images.githubusercontent.com/19484971/203187271-00b2fce6-4036-44ba-93ca-256c28eacae6.png" width=300>
 
 ### Bowl 모델
 
@@ -27,7 +36,7 @@
 <img src="https://user-images.githubusercontent.com/19484971/202378959-3f79bb95-56b7-4e75-bd4a-0bf523079329.png" width=400>
 > Windows 의 3D 뷰어로 본 Bowl 모델
 
-### Magick++
+### Magick++ 라이브러리 설치
 
 우선 [ImageMagick-7.1.0-52-Q16-HDRI](https://imagemagick.org/script/download.php#windows)를 설치하였다. visual studio 내부에 라이브러리를 내장해서 사용할 예정이었기에 C와 C++ 헤더와 라이브러리를 같이 설치해주었다.
 
@@ -183,3 +192,11 @@ C++과 Python에서 사용하는 자료형과 함수, 파라미터가 크게 다
 - dll 파일 인식
     - `glew32.dll`과 `glu32.dll`을 `C:\Windows\SysWOW64`에 넣어서 해결하였다.
     - 문제는 시스템 환경 변수나 OS 등의 이유로 인식하는 폴더 위치가 다르거나 설치된 파일이 다를 수 있어서 다른 dll 파일 인식에러가 날 수 있다. 구글에서 해당 dll 파일을 검색해서 `C:\Windows\SysWOW64` 혹은 `C:\Windows\System32`에 넣어주어야 한다.
+
+### 참고
+
+- [openGL 노션](https://www.notion.so/3D-OpenGL-578443569f6947fab3b34078455225b6)
+- [노션 openGL 튜토리얼 정리](https://www.notion.so/openGL-8deeed9e075d4bd49afa64066b6f092e)
+    - [openGL 튜토리얼](http://www.opengl-tutorial.org/)
+- [카메라 이론](https://www.notion.so/Coordinate-System-791c56e52b124823823861ec4145dca9)
+    - [다크 프로그래머](https://darkpgmr.tistory.com/category/%EC%98%81%EC%83%81%EC%B2%98%EB%A6%AC?page=1)
