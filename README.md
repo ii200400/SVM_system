@@ -118,38 +118,14 @@
 - Python(3.8.13)
 - Visual Studio Code (1.70.0)
 - openCV (4.6.0)
+- Thread
 
 ### 📸 영상처리 기술
 
 - 왜곡보정을 위한 카메라 캘리브레이션(Camera Calibration)
 - TopView 변환을 위한 이미지 투영(Imaging Geometry)
-- 이미지 투영과 합성을 위한 동차좌표 (Homogeneous coordinates)
-
-<img src="https://user-images.githubusercontent.com/19484971/202954698-00de85b2-040d-45dc-846d-6a6ccb92a298.png" width=400>
-
-> 호모그래피(homography) : 한 평면을 다른 평면에 투영(projection)시켰을 때 투영된 대응점들 사이의 일정한 변환관계
-
-![image](https://user-images.githubusercontent.com/19484971/202955513-674f6fd6-0a0c-4a98-85af-e3f37ec3b0b8.png)
-![image](https://user-images.githubusercontent.com/19484971/202955529-fcfe90e4-ef50-498f-9df1-65ce66827a90.png)
-
-
+- 이미지 투영과 합성 연산을 위한 동차좌표 (Homogeneous coordinates)
 - 이미지 합성 경계면 블랜딩 처리 (색상, 명도 보정)
-
-<img src="https://user-images.githubusercontent.com/19484971/202955210-bc560959-7a5b-4fc2-bfb6-efe00a989ec6.png" width=400>
-
-> RGB 행렬 평균값을 활용하여 색상 보정
-
-<img src="https://user-images.githubusercontent.com/19484971/202955228-9185c4dd-9cfe-4ef9-a3d6-46cc6acf6f90.png" width=400>
-
-> HSV 행렬 산술평균 값을 적용하여 명도 조절
-
-- 영상 속도 향상을 위한 멀티 프로세싱
-
-<img src="https://user-images.githubusercontent.com/19484971/202961245-487441ab-5789-491f-8458-bb34e278639a.png" width=400>
-
-<img src="https://user-images.githubusercontent.com/19484971/202960833-23b7c56b-b57d-4c3e-8dd0-81340a9f75e4.png" width=400>
-
-> 5\~7 프레임에서 19\~20 프레임으로 성능 향상
 
 </br>
 
@@ -212,5 +188,4 @@ Bowl View를 활용하여 제작하였으나, 프레임이 너무 떨어지는 �
 
 ## 👀 더 찾아보기
 
-* [영상처리 이론 정리](https://github.com/ii200400/IT_Skill_Question/tree/master/JobGroup/mobility/cognition/SVM)
-* [openGL 실습](https://github.com/ii200400/IT_Skill_Question/tree/master/JobGroup/mobility/cognition/SVM/openGL)
+* [영상처리 및 openGL 이론 정리](https://github.com/ii200400/IT_Skill_Question/tree/master/JobGroup/mobility/cognition/SVM)
