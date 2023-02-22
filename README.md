@@ -3,7 +3,7 @@
 ### 삼성전기 기업연계 프로젝트
 
 <details>
-<summary>닛산 캐시카이 자동차의 SVM</summary>
+<summary>닛산 캐시카이 자동차의 SVM (타사 SVM)</summary>
 <div markdown="1">
   
   <img src="https://user-images.githubusercontent.com/19484971/202961156-5bc5ac89-b355-453f-a87a-67fb10fe6bbe.png" width=600>
@@ -125,7 +125,7 @@
 - TopView 변환을 위한 이미지 투영(Imaging Geometry)
 - 이미지 투영과 합성을 위한 동차좌표 (Homogeneous coordinates)
 
-<img src="https://user-images.githubusercontent.com/19484971/202954698-00de85b2-040d-45dc-846d-6a6ccb92a298.png" width=600>
+<img src="https://user-images.githubusercontent.com/19484971/202954698-00de85b2-040d-45dc-846d-6a6ccb92a298.png" width=400>
 
 > 호모그래피(homography) : 한 평면을 다른 평면에 투영(projection)시켰을 때 투영된 대응점들 사이의 일정한 변환관계
 
@@ -135,45 +135,70 @@
 
 - 이미지 합성 경계면 블랜딩 처리 (색상, 명도 보정)
 
-<img src="https://user-images.githubusercontent.com/19484971/202955210-bc560959-7a5b-4fc2-bfb6-efe00a989ec6.png" width=600>
+<img src="https://user-images.githubusercontent.com/19484971/202955210-bc560959-7a5b-4fc2-bfb6-efe00a989ec6.png" width=400>
 
 > RGB 행렬 평균값을 활용하여 색상 보정
 
-<img src="https://user-images.githubusercontent.com/19484971/202955228-9185c4dd-9cfe-4ef9-a3d6-46cc6acf6f90.png" width=600>
+<img src="https://user-images.githubusercontent.com/19484971/202955228-9185c4dd-9cfe-4ef9-a3d6-46cc6acf6f90.png" width=400>
 
 > HSV 행렬 산술평균 값을 적용하여 명도 조절
 
 - 영상 속도 향상을 위한 멀티 프로세싱
 
-<img src="https://user-images.githubusercontent.com/19484971/202961245-487441ab-5789-491f-8458-bb34e278639a.png" width=600>
+<img src="https://user-images.githubusercontent.com/19484971/202961245-487441ab-5789-491f-8458-bb34e278639a.png" width=400>
 
-<img src="https://user-images.githubusercontent.com/19484971/202960833-23b7c56b-b57d-4c3e-8dd0-81340a9f75e4.png" width=600>
+<img src="https://user-images.githubusercontent.com/19484971/202960833-23b7c56b-b57d-4c3e-8dd0-81340a9f75e4.png" width=400>
 
-> 5~7 프레임에서 19~20 프레임으로 성능 향상
+> 5\~7 프레임에서 19\~20 프레임으로 성능 향상
 
 </br>
 
 ## 🛠 SVM 장비
 
-- [마트카트](https://yestore.kr/shop/item.php?it_id=1426567216)
+<details>
+<summary>마트카트</summary>
+<div markdown="1">
+  
+  <img src="https://user-images.githubusercontent.com/19484971/202383691-cbfe1e29-a2dc-4116-a4ad-d3014939b53b.png" width=300>
 
-<img src="https://user-images.githubusercontent.com/19484971/202383691-cbfe1e29-a2dc-4116-a4ad-d3014939b53b.png" width=400>
+  - [구입처 & 스팩](https://yestore.kr/shop/item.php?it_id=1426567216)
 
-- [카메라](https://www.coupang.com/vp/products/6595685374?itemId=14901263581&vendorItemId=82139995937&q=%EC%96%B4%EC%95%88%EC%B9%B4%EB%A9%94%EB%9D%BC+usb&itemsCount=36&searchId=2a2f3dea45a94ec59734a168e85c6537&rank=2&isAddedCart=)
+</div>
+</details>
 
-<img src="https://user-images.githubusercontent.com/19484971/203259896-15f01710-4c54-47ba-ab3b-9c45517a73e5.png" width=200>
+<details>
+<summary>어안렌즈 카메라</summary>
+<div markdown="1">
+  
+  <img src="https://user-images.githubusercontent.com/19484971/203259896-15f01710-4c54-47ba-ab3b-9c45517a73e5.png" width=200>
 
-- 카메라 설치위치와 각도
+  - [구입처 & 스팩](https://www.coupang.com/vp/products/6595685374?itemId=14901263581&vendorItemId=82139995937&q=%EC%96%B4%EC%95%88%EC%B9%B4%EB%A9%94%EB%9D%BC+usb&itemsCount=36&searchId=2a2f3dea45a94ec59734a168e85c6537&rank=2&isAddedCart=)
 
-<img src="https://user-images.githubusercontent.com/19484971/203239711-6229d112-633e-446c-adbe-fd906a1ca9f8.png" width=400>
+</div>
+</details>
 
-<img src="https://user-images.githubusercontent.com/19484971/203261100-d28591d0-7703-438d-8c89-f2c647dc81f1.png" width=400>
+<details>
+<summary>설치 방법</summary>
+<div markdown="1">
 
-<img src="https://user-images.githubusercontent.com/19484971/203241175-f45d5bea-fa6b-4aa1-bba8-983ff5b42270.png" width=300>
+  <img src="https://user-images.githubusercontent.com/19484971/203239711-6229d112-633e-446c-adbe-fd906a1ca9f8.png" width=400>
+  
+  > 카메라 설치 위치
 
-- 카메라 4대 연결
+  <img src="https://user-images.githubusercontent.com/19484971/203261100-d28591d0-7703-438d-8c89-f2c647dc81f1.png" width=400>
+  
+  > 카메라 설치 후 실재 모습
 
-<img src="https://user-images.githubusercontent.com/19484971/203247200-2268395d-ba5b-4eb9-8d6f-686f36b07608.jpg" width=400>
+  <img src="https://user-images.githubusercontent.com/19484971/203241175-f45d5bea-fa6b-4aa1-bba8-983ff5b42270.png" width=300>
+
+  > 카메라 설치각도
+
+  <img src="https://user-images.githubusercontent.com/19484971/203247200-2268395d-ba5b-4eb9-8d6f-686f36b07608.jpg" width=400>
+  
+  > 카메라 4대 노트북 연결
+
+</div>
+</details>
 
 </br>
 
