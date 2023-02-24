@@ -3,13 +3,12 @@
 ### 삼성전기 기업연계 프로젝트
 
 <details>
-<summary>닛산 캐시카이 자동차의 SVM (타사 SVM)</summary>
+<summary>타사 SVM</summary>
 <div markdown="1">
   
   <img src="https://user-images.githubusercontent.com/19484971/202961156-5bc5ac89-b355-453f-a87a-67fb10fe6bbe.png" width=600>
 
-  > 당시 SVM 시스템 제작에 참고했던 `닛산 캐시카이`의 SVM<br>
-  참고에 도움을 주신 ㅊㅎㄱ 컨설턴트님 다시 한 번 감사합니다!
+  > 당시 SVM 시스템 제작에 참고했던 `닛산 캐시카이`의 SVM
 
 </div>
 </details>
